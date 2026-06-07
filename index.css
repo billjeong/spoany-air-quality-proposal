@@ -328,6 +328,12 @@ main {
   flex-shrink: 0;
 }
 
+.image-container.portrait-container {
+  aspect-ratio: 9/16;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
 .image-overlay-hud {
   position: absolute;
   top: 0.75rem;
