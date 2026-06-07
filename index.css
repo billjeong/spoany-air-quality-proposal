@@ -1360,6 +1360,17 @@ td strong {
   to { opacity: 1; }
 }
 
+#roadmap-img-container {
+  max-height: 38vh;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+
+#roadmap-img-container .slide-image {
+  object-fit: contain;
+  padding: 0;
+}
+
 /* Responsive constraints */
 @media (max-width: 1024px) {
   body {
