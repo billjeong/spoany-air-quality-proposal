@@ -9,9 +9,13 @@
   --border-hover: rgba(255, 255, 255, 0.15);
   
   /* Accent Colors */
-  --spoany-orange: #FF6B00;
-  --spoany-orange-glow: rgba(255, 107, 0, 0.3);
-  --spoany-orange-dim: rgba(255, 107, 0, 0.1);
+  --spoany-brand: #ff3c42; /* Official Spoany Brand Red */
+  --spoany-brand-glow: rgba(255, 60, 66, 0.3);
+  --spoany-brand-dim: rgba(255, 60, 66, 0.1);
+
+  --spoany-orange: var(--spoany-brand);
+  --spoany-orange-glow: var(--spoany-brand-glow);
+  --spoany-orange-dim: var(--spoany-brand-dim);
   
   --neon-green: #39FF14;
   --neon-green-glow: rgba(57, 255, 20, 0.3);
@@ -44,7 +48,7 @@
 body {
   background-color: var(--bg-primary);
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(255, 107, 0, 0.06) 0%, transparent 40%),
+    radial-gradient(circle at 10% 20%, rgba(255, 60, 66, 0.06) 0%, transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.06) 0%, transparent 40%),
     radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.5) 0%, #060913 100%);
   color: #F1F5F9;
@@ -519,7 +523,7 @@ main {
 
 .btn-primary:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 30px rgba(255, 107, 0, 0.5);
+  box-shadow: 0 8px 30px rgba(255, 60, 66, 0.5);
 }
 
 .btn-secondary {
@@ -729,7 +733,7 @@ td strong {
 
 .roadmap-phase:hover, .roadmap-phase.active {
   border-color: var(--spoany-orange);
-  background: rgba(255, 107, 0, 0.02);
+  background: rgba(255, 60, 66, 0.02);
 }
 
 .phase-header {
@@ -1217,7 +1221,7 @@ td strong {
   left: 4%;
   width: 12%;
   height: 30px;
-  background: linear-gradient(135deg, var(--spoany-orange), #ff9100);
+  background: linear-gradient(135deg, var(--spoany-orange), #ff6b70);
   border-radius: 4px;
   border: 1px solid rgba(255,255,255,0.2);
   box-shadow: 0 0 8px var(--spoany-orange-glow);

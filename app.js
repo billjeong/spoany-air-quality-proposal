@@ -847,15 +847,15 @@ document.addEventListener('DOMContentLoaded', () => {
         datasets: [{
           label: '이산화탄소 농도 (CO2 - ppm)',
           data: co2TrendData,
-          borderColor: '#FF6B00',
-          backgroundColor: 'rgba(255, 107, 0, 0.1)',
+          borderColor: '#ff3c42',
+          backgroundColor: 'rgba(255, 60, 66, 0.1)',
           borderWidth: 3,
           tension: 0.35,
           fill: true,
           pointRadius: 4,
           pointHoverRadius: 7,
           shadowBlur: 10,
-          shadowColor: 'rgba(255, 107, 0, 0.5)'
+          shadowColor: 'rgba(255, 60, 66, 0.5)'
         }]
       },
       options: {
@@ -945,8 +945,8 @@ document.addEventListener('DOMContentLoaded', () => {
         default:
           datasetLabel = '이산화탄소 농도 (CO2 - ppm)';
           datasetData = co2TrendData;
-          strokeColor = '#FF6B00';
-          bgColor = 'rgba(255, 107, 0, 0.1)';
+          strokeColor = '#ff3c42';
+          bgColor = 'rgba(255, 60, 66, 0.1)';
       }
       
       trendsChart.data.datasets[0].label = datasetLabel;
