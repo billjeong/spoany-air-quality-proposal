@@ -4,6 +4,93 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  // ==========================================
+  // [설정] 클라이언트 사이드 비밀번호 게이트
+  // *주의: 이 게이트는 클라이언트 사이드에서 작동하므로 완전한 보안이 아니며,
+  // 외부인의 단순 접근을 차단하기 위한 용도입니다. 비밀번호는 평문으로 저장됩니다.
+  // ==========================================
+  const GATE_CONFIG = {
+    PASSWORD: "4342",
+    SESSION_KEY: "spoany_proposal_auth"
+  };
+
+  function initPasswordGate() {
+    const savedAuth = sessionStorage.getItem(GATE_CONFIG.SESSION_KEY);
+    const gateEl = document.getElementById('password-gate');
+    const passwordInput = document.getElementById('gate-password-input');
+    const errorMsg = document.getElementById('gate-error-msg');
+    
+    if (savedAuth === 'true') {
+      document.body.classList.add('authorized');
+      if (gateEl) gateEl.remove();
+      return;
+    }
+    
+    document.body.classList.remove('authorized');
+    
+    if (passwordInput) {
+      // Focus the input window
+      setTimeout(() => passwordInput.focus(), 100);
+      
+      passwordInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (val.length === 4) {
+          verifyPassword(val);
+        }
+      });
+      
+      passwordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          verifyPassword(passwordInput.value);
+        }
+      });
+    }
+    
+    function verifyPassword(inputVal) {
+      if (inputVal === GATE_CONFIG.PASSWORD) {
+        sessionStorage.setItem(GATE_CONFIG.SESSION_KEY, 'true');
+        document.body.classList.add('authorized');
+        
+        if (gateEl) {
+          gateEl.style.opacity = '0';
+          gateEl.style.transition = 'opacity 0.3s ease';
+          setTimeout(() => gateEl.remove(), 300);
+        }
+        
+        // Vercel Analytics Custom Event Tracking
+        trackUnlockEvent();
+      } else {
+        if (passwordInput) {
+          passwordInput.value = '';
+          passwordInput.classList.add('shake');
+          setTimeout(() => passwordInput.classList.remove('shake'), 400);
+          passwordInput.focus();
+        }
+        if (errorMsg) {
+          errorMsg.textContent = '비밀번호가 올바르지 않습니다. 다시 입력해주세요.';
+          errorMsg.style.display = 'block';
+        }
+      }
+    }
+  }
+
+  function trackUnlockEvent() {
+    try {
+      window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+      const urlParams = new URLSearchParams(window.location.search);
+      const utmSource = urlParams.get('utm_source');
+      const eventData = utmSource ? { source: utmSource } : undefined;
+      
+      window.va('event', { name: 'proposal_unlocked', data: eventData });
+      console.log('[Vercel Web Analytics] event proposal_unlocked tracked.', eventData);
+    } catch (err) {
+      console.error('[Vercel Web Analytics] Failed to track event:', err);
+    }
+  }
+
+  // Initialize Password Gate
+  initPasswordGate();
+
   // --------------------------------------------------------------------------
   // 1. Navigation & Slide Deck Controller
   // --------------------------------------------------------------------------

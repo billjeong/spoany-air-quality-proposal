@@ -10,6 +10,25 @@
 </head>
 <body>
 
+  <!-- Password Gate Screen (Basic Client-Side protection for external blocking) -->
+  <div id="password-gate">
+    <div class="gate-container">
+      <div class="gate-logo">
+        <span>SPOANY</span> <span>AIR</span>
+      </div>
+      <div class="gate-badge">AIR CARE HUB</div>
+      <p class="gate-title">제안서 보안 인증</p>
+      <p class="gate-description">본 제안서는 대외비 문서입니다.<br>전송받은 4자리 PIN 번호를 입력하십시오.</p>
+      
+      <div class="gate-input-wrapper">
+        <input type="password" id="gate-password-input" inputmode="numeric" pattern="[0-9]*" placeholder="••••" maxlength="4" autocomplete="off" autofocus>
+      </div>
+      
+      <p id="gate-error-msg" class="gate-error-msg"></p>
+    </div>
+  </div>
+
+
   <!-- Header -->
   <header>
     <div class="logo-container">
@@ -684,5 +703,7 @@
   </main>
 
   <script src="app.js"></script>
+  <!-- Vercel Web Analytics -->
+  <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

@@ -1444,3 +1444,150 @@ td strong {
     display: none;
   }
 }
+
+/* ==========================================
+   Password Gate Style (Premium Dark/Minimal)
+   ========================================== */
+
+/* Hide main content before authentication */
+body:not(.authorized) header,
+body:not(.authorized) main {
+  display: none !important;
+}
+
+#password-gate {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #040712; /* Deep dark background matching the theme */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #ffffff;
+}
+
+.gate-container {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 3rem 2.5rem;
+  width: 90%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 
+              0 0 50px rgba(255, 96, 66, 0.03); /* Subtle orange ambiance */
+}
+
+.gate-logo {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  margin-bottom: 0.25rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.gate-logo span:first-child {
+  color: #FFFFFF;
+}
+
+.gate-logo span:last-child {
+  color: var(--spoany-orange, #ff6042); /* Fallback to signature orange */
+}
+
+.gate-badge {
+  display: inline-block;
+  background: rgba(255, 96, 66, 0.1);
+  color: var(--spoany-orange, #ff6042);
+  border: 1px solid rgba(255, 96, 66, 0.25);
+  border-radius: 50px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+}
+
+.gate-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.5px;
+}
+
+.gate-description {
+  font-size: 0.9rem;
+  color: #94A3B8;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.gate-input-wrapper {
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+#gate-password-input {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 1.8rem;
+  color: #ffffff;
+  text-align: center;
+  letter-spacing: 0.6em;
+  text-indent: 0.3em; /* Balance centering with letter-spacing */
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+#gate-password-input:focus {
+  border-color: var(--spoany-orange, #ff6042);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3),
+              0 0 15px rgba(255, 96, 66, 0.25);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+#gate-password-input::placeholder {
+  color: rgba(255, 255, 255, 0.15);
+  letter-spacing: normal;
+  text-indent: 0;
+}
+
+.gate-error-msg {
+  font-size: 0.85rem;
+  color: #ff3c42; /* Neon red */
+  min-height: 20px;
+  margin: 0;
+  display: none;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Shake Animation for failed attempt */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.shake {
+  animation: shake 0.4s ease-in-out;
+  border-color: #ff3c42 !important;
+  box-shadow: 0 0 15px rgba(255, 60, 66, 0.25) !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
