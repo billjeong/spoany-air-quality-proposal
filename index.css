@@ -1430,6 +1430,64 @@ td strong {
   }
 }
 
+/* 모바일(폰) 헤더·타이포 보강 — 헤더 줄바꿈/모드토글/by AICube */
+@media (max-width: 768px) {
+  header {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+  }
+  .logo-container {
+    gap: 0.5rem;
+  }
+  .logo-text {
+    font-size: 1.3rem;
+  }
+  /* 'by AICube' 인라인 텍스트 축소 (인라인 스타일 우선순위 때문에 !important 사용) */
+  .logo-container > span {
+    font-size: 1rem !important;
+    margin-left: 0.35rem !important;
+    padding-left: 0.5rem !important;
+  }
+  .mode-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+  .toggle-btn {
+    flex: 1;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+  .nav-controls {
+    gap: 0.6rem;
+  }
+  .nav-btn {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+  .slide-title {
+    font-size: 2rem;
+  }
+  .slide-description {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  .slide {
+    gap: 1.5rem;
+  }
+  .hero-btns {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .btn-primary,
+  .btn-secondary {
+    font-size: 0.95rem;
+    padding: 0.85rem 1.5rem;
+  }
+}
+
 @media (max-width: 640px) {
   .summary-bar {
     grid-template-columns: 1fr;
@@ -1461,6 +1519,7 @@ body:not(.authorized) main {
   left: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh; /* iOS Safari 주소창 영역 보정 */
   background-color: #040712; /* Deep dark background matching the theme */
   display: flex;
   justify-content: center;
@@ -1589,5 +1648,26 @@ body:not(.authorized) main {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Password Gate + 본문 - 초소형 화면(≤480px) 보강 */
+@media (max-width: 480px) {
+  #password-gate {
+    align-items: flex-start; /* 키패드가 입력창 가리는 현상 완화 */
+    padding-top: 12vh;
+  }
+  .gate-container {
+    padding: 2.25rem 1.5rem;
+  }
+  .gate-logo {
+    font-size: 1.9rem;
+  }
+  .toggle-btn {
+    font-size: 0.72rem;
+    padding: 0.5rem 0.4rem;
+  }
+  .slide-title {
+    font-size: 1.7rem;
+  }
 }
 
