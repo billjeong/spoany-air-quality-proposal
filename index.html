@@ -12,709 +12,846 @@
   <meta property="og:description" content="스포애니 밀폐 룸의 실내 공기질을 센서 기반으로 자율 관리하는 시스템 도입 제안.">
   <meta property="og:site_name" content="스포애니 공기질 관리 제안">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="index.css">
-  <!-- Chart.js CDN for interactive charts -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
+
+    :root {
+      --bg-primary: #060913;
+      --bg-secondary: #0b1120;
+      --bg-card: rgba(255, 255, 255, 0.03);
+      --bg-card-hover: rgba(255, 255, 255, 0.06);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.16);
+      --ink: #F1F5F9;
+      --ink-dim: #94A3B8;
+      --ink-faint: #64748B;
+      --spoany-brand: #ff3c42;           /* Official Spoany Brand Red */
+      --spoany-brand-glow: rgba(255, 60, 66, 0.3);
+      --spoany-brand-dim: rgba(255, 60, 66, 0.1);
+      --neon-green: #39FF14;
+      --neon-cyan: #00F0FF;
+      --neon-red: #FF2A6D;
+      --font-display: 'Outfit', 'Pretendard Variable', Pretendard, sans-serif;
+      --font-sans: 'Pretendard Variable', Pretendard, -apple-system, system-ui, 'Apple SD Gothic Neo', sans-serif;
+      --maxw: 1080px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg-primary);
+      background-image:
+        radial-gradient(circle at 12% 8%, rgba(255, 60, 66, 0.07) 0%, transparent 38%),
+        radial-gradient(circle at 88% 92%, rgba(0, 240, 255, 0.05) 0%, transparent 40%);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      line-height: 1.75;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .container { max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
+    :focus-visible { outline: 3px solid var(--neon-cyan); outline-offset: 2px; border-radius: 4px; }
+
+    /* ===== PIN GATE ===== */
+    .gate { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 24px;
+      background: radial-gradient(120% 120% at 50% 0%, #0b1120 0%, #060913 60%, #03040a 100%); }
+    .gate__card { width: 100%; max-width: 420px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 18px; padding: 42px 30px; text-align: center; }
+    .gate__logo { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; letter-spacing: 0.5px; }
+    .gate__logo .r { color: var(--spoany-brand); }
+    .gate__badge { display: inline-block; margin-top: 8px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em; color: var(--neon-cyan); border: 1px solid var(--border-color); border-radius: 99px; padding: 3px 12px; }
+    .gate__title { margin-top: 18px; font-size: 1.15rem; font-weight: 800; }
+    .gate__sub { margin-top: 8px; font-size: 0.9rem; color: var(--ink-dim); }
+    .gate__input { width: 100%; margin-top: 20px; padding: 14px 16px; font-size: 1.2rem; font-family: inherit; text-align: center; letter-spacing: 0.5em;
+      color: var(--ink); background: rgba(0,0,0,0.35); border: 1.5px solid var(--border-hover); border-radius: 12px; }
+    .gate__input:focus { border-color: var(--spoany-brand); }
+    .gate__error { min-height: 1.3em; margin-top: 12px; font-size: 0.85rem; color: var(--spoany-brand); font-weight: 600; }
+    .gate__note { margin-top: 18px; font-size: 0.78rem; color: var(--ink-faint); }
+    .gate.shake .gate__card { animation: shake .4s; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+
+    /* ===== HEADER ===== */
+    .header { position: sticky; top: 0; z-index: 100; background: rgba(6, 9, 19, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); }
+    .header__inner { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; }
+    .brand__bar { width: 4px; height: 22px; background: var(--spoany-brand); border-radius: 2px; }
+    .brand__by { font-size: 0.72rem; font-weight: 700; color: var(--ink-faint); letter-spacing: 0.08em; border-left: 1px solid var(--border-color); padding-left: 10px; }
+    .nav { display: flex; gap: 20px; font-size: 0.88rem; color: var(--ink-dim); }
+    .nav a:hover { color: var(--ink); }
+    .nav__cta { color: var(--spoany-brand); font-weight: 700; }
+    .nav-toggle { display: none; background: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+    .nav-toggle span { display: block; width: 18px; height: 2px; background: var(--ink); margin: 3px 0; }
+    .mobile-nav { display: none; flex-direction: column; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); }
+    .mobile-nav a { padding: 13px 22px; border-top: 1px solid var(--border-color); font-size: 0.95rem; }
+    .mobile-nav.open { display: flex; }
+
+    /* ===== HERO ===== */
+    .hero { padding: 92px 0 72px; }
+    .eyebrow { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.18em; color: var(--spoany-brand); text-transform: uppercase; }
+    .hero__title { margin-top: 14px; font-family: var(--font-display); font-size: clamp(2rem, 5.4vw, 3.4rem); font-weight: 800; line-height: 1.22; }
+    .hero__title .q { color: var(--spoany-brand); }
+    .hero__lead { margin-top: 20px; max-width: 660px; font-size: 1.05rem; color: var(--ink-dim); }
+    .hero__lead strong { color: var(--ink); }
+    .hero__cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 24px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; font-family: inherit; cursor: pointer; border: 1px solid transparent; }
+    .btn--primary { background: var(--spoany-brand); color: #fff; }
+    .btn--primary:hover { filter: brightness(1.1); }
+    .btn--ghost { border-color: var(--border-hover); color: var(--ink); background: transparent; }
+    .btn--ghost:hover { background: var(--bg-card-hover); }
+    .hero__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 34px; list-style: none; }
+    .hero__chips li { font-size: 0.8rem; color: var(--ink-dim); border: 1px solid var(--border-color); border-radius: 99px; padding: 5px 13px; background: var(--bg-card); }
+    .hero__visual { margin-top: 44px; border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; }
+    .hero__visual img { width: 100%; }
+    .hero__visual-note { font-size: 0.78rem; color: var(--ink-faint); padding: 10px 16px; border-top: 1px solid var(--border-color); background: var(--bg-card); }
+
+    /* ===== SECTION VISUALS ===== */
+    .visual { margin-top: 34px; border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; }
+    .visual img { width: 100%; }
+    .visual figcaption { font-size: 0.78rem; color: var(--ink-faint); padding: 10px 16px; border-top: 1px solid var(--border-color); background: var(--bg-card); }
+
+    /* ===== SECTIONS ===== */
+    .section { padding: 76px 0; }
+    .section--tight { padding: 44px 0; }
+    .section--alt { background: rgba(255,255,255,0.015); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+    .section__title { font-family: var(--font-display); font-size: clamp(1.5rem, 3.4vw, 2.1rem); font-weight: 800; line-height: 1.3; margin-top: 12px; }
+    .section__lead { margin-top: 14px; max-width: 700px; color: var(--ink-dim); }
+    .section__lead strong { color: var(--ink); }
+
+    /* ===== BENTO ===== */
+    .bento { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; margin-top: 38px; }
+    .bento__cell { border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-card); padding: 26px 24px; }
+    .bento__cell--hl { background: linear-gradient(160deg, var(--spoany-brand-dim) 0%, var(--bg-card) 55%); border-color: rgba(255, 60, 66, 0.35); }
+    .bento__num { font-family: var(--font-display); font-size: 2rem; font-weight: 800; line-height: 1.1; }
+    .bento__num small { font-size: 1rem; color: var(--ink-dim); font-weight: 600; }
+    .bento__label { margin-top: 8px; font-size: 0.88rem; color: var(--ink-dim); }
+    .bento__cell--hl .bento__num { color: var(--spoany-brand); }
+
+    /* ===== CARDS ===== */
+    .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 34px; }
+    .card { border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-card); padding: 26px 24px; }
+    .card h3 { font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .card h3 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--spoany-brand); flex: none; }
+    .card p { margin-top: 10px; font-size: 0.92rem; color: var(--ink-dim); }
+    .card ul { margin: 12px 0 0 18px; font-size: 0.9rem; color: var(--ink-dim); }
+    .card li { margin-top: 6px; }
+    .card li strong { color: var(--ink); }
+
+    /* ===== FLOW ===== */
+    .flow { display: flex; flex-direction: column; gap: 0; max-width: 560px; margin: 38px auto 0; }
+    .flow__node { border: 1px solid var(--border-color); border-radius: 14px; background: var(--bg-secondary); padding: 18px 22px; text-align: center; }
+    .flow__node strong { display: block; font-size: 0.98rem; }
+    .flow__node small { color: var(--ink-dim); font-size: 0.82rem; }
+    .flow__node--core { border-color: rgba(255, 60, 66, 0.45); background: linear-gradient(160deg, var(--spoany-brand-dim), var(--bg-secondary)); }
+    .flow__arrow { text-align: center; color: var(--ink-faint); padding: 6px 0; }
+    .flow__pill { display: inline-block; margin-bottom: 6px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; color: var(--neon-cyan); border: 1px solid var(--border-color); border-radius: 99px; padding: 2px 10px; }
+    .flow__caption { text-align: center; font-size: 0.8rem; color: var(--ink-faint); margin-top: 16px; }
+
+    /* ===== TABLE ===== */
+    .table-wrap { overflow-x: auto; margin-top: 30px; border: 1px solid var(--border-color); border-radius: 14px; }
+    table.cmp { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 620px; }
+    .cmp th, .cmp td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+    .cmp thead th { background: var(--bg-card); font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.04em; color: var(--ink-dim); }
+    .cmp tbody th { color: var(--ink); font-weight: 700; white-space: nowrap; }
+    .cmp tbody td { color: var(--ink-dim); }
+    .cmp tbody td strong { color: var(--ink); }
+    .cmp tbody tr:last-child th, .cmp tbody tr:last-child td { border-bottom: none; }
+    .table__caption { margin-top: 12px; font-size: 0.8rem; color: var(--ink-faint); }
+
+    /* ===== CALLOUT / METRICS ===== */
+    .callout { border: 1px solid var(--border-color); border-left: 3px solid var(--spoany-brand); border-radius: 12px; background: var(--bg-card); padding: 18px 22px; margin-top: 26px; font-size: 0.92rem; color: var(--ink-dim); }
+    .callout strong { color: var(--ink); }
+    .callout a { color: var(--neon-cyan); }
+    .metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 30px; }
+    .metric { border: 1px solid var(--border-color); border-radius: 14px; background: var(--bg-card); padding: 20px; text-align: center; }
+    .metric__num { font-family: var(--font-display); font-size: 1.7rem; font-weight: 800; }
+    .metric__num small { font-size: 0.95rem; color: var(--neon-cyan); }
+    .metric__label { margin-top: 6px; font-size: 0.82rem; color: var(--ink-dim); }
+    .footnote { margin-top: 14px; font-size: 0.78rem; color: var(--ink-faint); line-height: 1.6; }
+
+    /* ===== CO2 SIMULATOR WIDGET ===== */
+    .widget { border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-card); padding: 24px; margin-top: 34px; }
+    .widget__head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.9rem; }
+    .widget__head strong { font-size: 0.95rem; }
+    .widget__tag { color: var(--neon-cyan); font-weight: 700; }
+    .widget__range { width: 100%; margin-top: 18px; appearance: none; -webkit-appearance: none; height: 6px; border-radius: 99px; background: rgba(255,255,255,0.12); outline-offset: 4px; cursor: pointer; }
+    .widget__range::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--spoany-brand); border: 3px solid #fff; box-shadow: 0 0 10px var(--spoany-brand-glow); cursor: grab; }
+    .widget__range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--spoany-brand); border: 3px solid #fff; cursor: grab; }
+    .widget__scale { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: var(--ink-faint); }
+    .sim-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+    .sim-cell { border: 1px solid var(--border-color); border-radius: 12px; background: rgba(0,0,0,0.25); padding: 14px; text-align: center; }
+    .sim-cell__label { font-size: 0.76rem; color: var(--ink-faint); }
+    .sim-cell__val { margin-top: 4px; font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; }
+    .sim-cell__val.good { color: var(--neon-green); }
+    .sim-cell__val.mid { color: var(--neon-cyan); }
+    .sim-cell__val.bad { color: var(--neon-red); }
+    .widget__note { margin-top: 14px; font-size: 0.78rem; color: var(--ink-faint); }
+
+    /* ===== ROADMAP ===== */
+    .phase-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 34px; }
+    .phase { border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-card); padding: 26px 24px; }
+    .phase--now { border-color: rgba(255, 60, 66, 0.4); }
+    .phase__no { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--spoany-brand); color: #fff; font-weight: 800; font-family: var(--font-display); }
+    .phase h3 { margin-top: 12px; font-size: 1.02rem; font-weight: 800; }
+    .phase .when { font-size: 0.8rem; color: var(--spoany-brand); font-weight: 700; }
+    .phase ul { margin: 12px 0 0 18px; font-size: 0.9rem; color: var(--ink-dim); }
+    .phase li { margin-top: 6px; }
+
+    /* ===== FAQ ===== */
+    .faq { margin-top: 30px; border-top: 1px solid var(--border-color); }
+    .faq details { border-bottom: 1px solid var(--border-color); }
+    .faq summary { padding: 18px 4px; font-weight: 700; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    .faq summary::after { content: "+"; color: var(--spoany-brand); font-family: var(--font-display); font-size: 1.2rem; }
+    .faq details[open] summary::after { content: "−"; }
+    .faq .a { padding: 0 4px 20px; font-size: 0.92rem; color: var(--ink-dim); max-width: 720px; }
+
+    /* ===== CTA ===== */
+    .cta { padding: 90px 0; text-align: center; background: linear-gradient(180deg, transparent, rgba(255, 60, 66, 0.06)); border-top: 1px solid var(--border-color); }
+    .cta__title { font-family: var(--font-display); font-size: clamp(1.5rem, 3.6vw, 2.2rem); font-weight: 800; line-height: 1.3; margin-top: 12px; }
+    .cta__lead { margin: 16px auto 0; max-width: 560px; color: var(--ink-dim); }
+    .cta__btns { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+    .cta__note { margin-top: 20px; font-size: 0.82rem; color: var(--ink-faint); }
+
+    /* ===== FOOTER ===== */
+    .footer { border-top: 1px solid var(--border-color); padding: 44px 0 56px; font-size: 0.82rem; color: var(--ink-faint); }
+    .footer h4 { font-size: 0.85rem; color: var(--ink-dim); margin-bottom: 8px; }
+    .footer ul { list-style: none; }
+    .footer li { margin-top: 5px; }
+    .footer a { color: var(--ink-dim); text-decoration: underline; text-underline-offset: 3px; }
+    .footer__copy { margin-top: 26px; }
+
+    /* ===== REVEAL ===== */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 860px) {
+      .nav { display: none; }
+      .nav-toggle { display: block; }
+      .bento { grid-template-columns: 1fr 1fr; }
+      .bento__cell--wide { grid-column: span 2; }
+      .card-grid, .phase-grid, .metric-row { grid-template-columns: 1fr; }
+      .sim-grid { grid-template-columns: 1fr; }
+      .hero { padding: 64px 0 52px; }
+      .section { padding: 56px 0; }
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Password Gate Screen (Basic Client-Side protection for external blocking) -->
-  <div id="password-gate">
-    <div class="gate-container">
-      <div class="gate-logo">
-        <span>SPOANY</span> <span>AIR</span>
-      </div>
-      <div class="gate-badge">AIR CARE HUB</div>
-      <p class="gate-title">제안서 보안 인증</p>
-      <p class="gate-description">본 제안서는 대외비 문서입니다.<br>전송받은 4자리 PIN 번호를 입력하십시오.</p>
-      
-      <div class="gate-input-wrapper">
-        <input type="password" id="gate-password-input" inputmode="numeric" pattern="[0-9]*" placeholder="••••" maxlength="4" autocomplete="off" autofocus>
-      </div>
-      
-      <p id="gate-error-msg" class="gate-error-msg"></p>
+  <!-- ===== PIN GATE ===== -->
+  <div id="gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+    <div class="gate__card">
+      <div class="gate__logo">SPOANY <span class="r">AIR</span></div>
+      <div class="gate__badge">AIR CARE HUB</div>
+      <p class="gate__title" id="gate-title">제안서 보안 인증</p>
+      <p class="gate__sub">본 제안서는 열람 권한이 부여된 담당자에게만 공개됩니다.<br>전송받은 4자리 PIN을 입력해 주십시오.</p>
+      <label for="gate-input" class="sr-only">4자리 PIN 번호</label>
+      <input id="gate-input" class="gate__input" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="••••" maxlength="4" autocomplete="off" aria-describedby="gate-error" autofocus>
+      <p id="gate-error" class="gate__error" role="alert" aria-live="polite"></p>
+      <p class="gate__note">문의 · 열람 권한 요청: 에이아이큐브(AICube) 제안팀</p>
     </div>
   </div>
 
+  <!-- ===== CONTENT ===== -->
+  <div id="content" hidden>
 
-  <!-- Header -->
-  <header>
-    <div class="logo-container">
-      <div class="logo-text"><span>SPOANY</span> <span>AIR</span></div>
-      <div class="logo-badge">AIR CARE HUB</div>
-      <span style="font-size: 1.6rem; color: #64748B; font-family: var(--font-display); margin-left: 0.5rem; border-left: 1px solid var(--border-color); padding-left: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: -1px;">by AICube</span>
-      <a class="master-link" href="https://0spoanymaster.vercel.app/" title="스포애니 통합 제안 허브로 이동">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        통합 허브
-      </a>
-    </div>
-    
-    <div class="mode-toggle">
-      <button class="toggle-btn active" id="btn-mode-pitch">제안 발표 슬라이드</button>
-      <button class="toggle-btn" id="btn-mode-dashboard">실시간 스마트 공기질 대시보드</button>
-    </div>
-    
-    <div class="nav-controls" id="slide-nav-controls">
-      <button class="nav-btn" id="btn-prev" aria-label="이전 슬라이드">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-      </button>
-      <div class="slide-indicator" id="slide-indicator">1 / 6</div>
-      <button class="nav-btn" id="btn-next" aria-label="다음 슬라이드">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- Main Body -->
-  <main>
-    
-    <!-- Pitch Slides Section -->
-    <div class="slides-wrapper" id="pitch-container">
-      <div class="slide-deck">
-        
-        <!-- SLIDE 1: Title -->
-        <div class="slide active" id="slide-1">
-          <div class="slide-info">
-            <span class="hero-tag">자율 엣지 공기 케어 인프라</span>
-            <span class="slide-number">SLIDE 01 / INTRODUCTION</span>
-            <h1 class="slide-title">"숨 막히는 밀폐 룸의<br>공기를 실시간으로 바꾸다"</h1>
-            <p class="slide-description">
-              회원들이 스포애니에 들어선 순간부터 나가는 순간까지 호흡기 건강에 대한 어떠한 불안감도 느끼지 않도록 자율적으로 공간을 정화하는 '온디바이스 자율 실내 공기질 관리 시스템'을 제안합니다.
-            </p>
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.95rem; color: #94A3B8;">
-              <span style="color: var(--spoany-orange); font-weight: 700; font-family: var(--font-display); letter-spacing: 1px;">제안사:</span>
-              <span style="color: #FFFFFF; font-weight: 600;">에이아이큐브 (AICube)</span>
-            </div>
-            <div class="hero-btns">
-              <button class="btn-primary" id="btn-start-pitch">
-                제안서 시작하기
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-              </button>
-              <button class="btn-secondary" id="btn-jump-db">실시간 대시보드</button>
-            </div>
-          </div>
-          <div class="slide-visual">
-            <div class="image-container">
-              <img src="assets/slide1.png" alt="스포애니 자율 정화 시스템 전경" class="slide-image">
-              <div class="image-overlay-hud">
-                <div class="hud-badge green"><span class="blink-dot"></span>SYS STATUS: 자율 안심 (ACTIVE)</div>
-                <div class="hud-badge cyan">AIR VOL: 68%</div>
-              </div>
-              <div class="image-overlay-bottom-hud">
-                <span>지점명: SPOANY VISION HUB</span>
-                <span>DEVICE ID: SP_AIR_001</span>
-              </div>
-            </div>
-            <div class="interactive-card">
-              <div class="card-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--spoany-orange)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-                자율 정화 엣지 핵심 요약
-              </div>
-              <p style="font-size: 0.9rem; color: #94A3B8; line-height: 1.5;">
-                특허받은 '전극 자율 청소 플라즈마 모듈'과 안드로이드 스마트 기기를 로컬 4-Pin GPIO로 연동하여 유지보수 비용 없이 24시간 안전 정화 터널을 가동합니다.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- SLIDE 2: Pain Point -->
-        <div class="slide" id="slide-2">
-          <div class="slide-info">
-            <span class="slide-number">SLIDE 02 / PAIN POINTS</span>
-            <h2 class="slide-title">회원이 피트니스에서<br>느끼는 공기 중 이면</h2>
-            <p class="slide-description">
-              피트니스는 호흡량이 일반 공간 대비 10배 이상 급증하는 고위험군 공간입니다. 밀폐된 G.X / 스피닝 룸은 단 15분 만에 이산화탄소 수치가 환경부 기준치를 초과하고 땀 냄새(암모니아, 황화수소)가 정체되어 운동 효율 및 재등록 의사를 꺾습니다.
-            </p>
-            <div class="slide-features">
-              <div class="feature-item">
-                <div class="feature-icon">!</div>
-                <div class="feature-text">
-                  <h4>밀폐 룸 CO₂ 급상승</h4>
-                  <p>스피닝, GX 등 유산소 그룹 운동 시 급격한 이산화탄소 상승으로 두통 및 답답함 유발.</p>
-                </div>
-              </div>
-              <div class="feature-item">
-                <div class="feature-icon">!</div>
-                <div class="feature-text">
-                  <h4>복합 악취 정체</h4>
-                  <p>땀 냄새(암모니아, 황화수소 등)와 부유 미세 비말 정체로 지점 청결 신뢰도 급감.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="slide-visual">
-            <div class="interactive-card">
-              <div class="card-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--spoany-orange)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                밀폐 룸 시간 경과 시뮬레이터 (직접 드래그해 보세요)
-              </div>
-              <div class="time-slider-container">
-                <div class="slider-labels">
-                  <span>시작 직후 (여유)</span>
-                  <span id="slider-time-text" style="color: var(--spoany-orange); font-weight: bold;">15분 경과 (매우 혼잡)</span>
-                  <span>45분 경과 (포화)</span>
-                </div>
-                <input type="range" min="0" max="45" value="15" class="custom-range" id="congestion-slider">
-                
-                <div class="metrics-grid">
-                  <div class="metric-card" id="co2-metric-card">
-                    <div class="metric-label">이산화탄소 (CO₂)</div>
-                    <div class="metric-value" id="co2-metric-val">1250 ppm</div>
-                  </div>
-                  <div class="metric-card" id="odor-metric-card">
-                    <div class="metric-label">땀냄새 유해 가스</div>
-                    <div class="metric-value red" id="odor-metric-val">나쁨</div>
-                  </div>
-                  <div class="metric-card" id="satisfaction-metric-card">
-                    <div class="metric-label">예상 재등록지수</div>
-                    <div class="metric-value red" id="satisfaction-metric-val">하락 위험</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="image-container">
-              <img src="assets/slide2.png" alt="GX룸 실내 공기 오염 열지도" class="slide-image">
-              <div class="image-overlay-hud">
-                <div class="hud-badge red"><span class="blink-dot"></span>WARNING: CO₂ 환기 필요 (VENTILATE)</div>
-                <div class="hud-badge red">오염 상태: 나쁨 (HIGH)</div>
-              </div>
-              <div class="image-overlay-bottom-hud">
-                <span>측정구역: G.X / SPINNING ROOM</span>
-                <span>위치: FRONT CEILING UNIT</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SLIDE 3: Key Technology -->
-        <div class="slide" id="slide-3">
-          <div class="slide-info">
-            <span class="slide-number">SLIDE 03 / KEY TECHNOLOGY</span>
-            <h2 class="slide-title">유지보수 비용 전무:<br>자율 전극 오토 클리닝</h2>
-            <p class="slide-description">
-              사다리를 타고 올라가 필터를 닦아내는 번거로움은 끝났습니다. 구동 시 전원이 인가되는 순간 및 매 주기마다 내부의 <strong>'고정밀 마이크로모터와 실리콘 브러쉬'가 구동되어 전극 먼지를 자율 청소</strong>하여 반영구적으로 살균 효율 100%를 유지합니다.
-            </p>
-            <div class="slide-features">
-              <div class="feature-item">
-                <div class="feature-icon">✓</div>
-                <div class="feature-text">
-                  <h4>오존프리 (Ozone Free) 살균</h4>
-                  <p>KCL 공인 시험 오존 발생농도 Trace(미량) 미만 획득으로 24시간 안전 가동 가능.</p>
-                </div>
-              </div>
-              <div class="feature-item">
-                <div class="feature-icon">✓</div>
-                <div class="feature-text">
-                  <h4>오토 클리닝 메커니즘 특허</h4>
-                  <p>12시간 주기 자동 브러싱으로 전극 부착 먼지를 제거해 반영구 성능 유지 (Maintenance Free).</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="slide-visual">
-            <div class="interactive-card">
-              <div class="card-title" style="justify-content: space-between;">
-                <span>자율 청소 주기 테스트 시뮬레이션</span>
-                <span id="cleaning-status-tag" class="density-badge smooth">양호 (필터 청결)</span>
-              </div>
-              
-              <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; border: 1px solid var(--border-color);">
-                <div class="sys-metric-item" style="margin-bottom: 0.8rem;">
-                  <div class="sys-label-group">
-                    <span>침상 방전극 오염 및 막힘 정도</span>
-                    <span id="filter-clog-percent">4%</span>
-                  </div>
-                  <div class="sys-bar-bg">
-                    <div class="sys-bar-fill green" id="filter-clog-fill" style="width: 4%;"></div>
-                  </div>
-                </div>
-                <div class="sys-metric-item" style="margin-bottom: 1rem;">
-                  <div class="sys-label-group">
-                    <span>이온 발생 및 살균 성능 효율</span>
-                    <span id="ion-efficiency-percent">99.5%</span>
-                  </div>
-                  <div class="sys-bar-bg">
-                    <div class="sys-bar-fill cyan" id="ion-efficiency-fill" style="width: 99.5%;"></div>
-                  </div>
-                </div>
-                
-                <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                  <button class="btn-secondary" id="btn-contaminate-filter" style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 8px;">12시간 방전 (오염 유발)</button>
-                  <button class="btn-primary" id="btn-trigger-clean-slide" style="padding: 0.5rem 1.2rem; font-size: 0.85rem; border-radius: 8px; box-shadow: none;">
-                    오토 클리닝 강제 실행
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="image-container contain-img">
-              <img src="assets/slide3.png" alt="자율 전극 청소 브러쉬 렌더링" class="slide-image">
-              <div class="image-overlay-hud">
-                <div class="hud-badge cyan"><span class="blink-dot"></span>AUTOCLEAN MECHANISM: 대기 (STANDBY)</div>
-                <div class="hud-badge orange">CLEAN EFFICIENCY: 100%</div>
-              </div>
-              <div class="image-overlay-bottom-hud">
-                <span>모듈규격: 58mm × 90mm × 17mm</span>
-                <span>특허번호: PAT-PLASMA-2026</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SLIDE 4: Enclosed Room Solution -->
-        <div class="slide" id="slide-4">
-          <div class="slide-info">
-            <span class="slide-number">SLIDE 04 / ENCLOSED ROOM SOLUTION</span>
-            <h2 class="slide-title">독립형 밀폐 룸 패키지:<br>32인치 일체형 정화 허브</h2>
-            <p class="slide-description">
-              G.X 룸과 스피닝 룸 전면 거울 벽에 일체형 매립 설치되는 32인치 디바이스입니다. 강사 스케줄과 프로필을 선명하게 보여주는 디지털 보드 역할과 동시에 내장형 고감도 CO₂ 센서로 이온 풍량과 팬 듀티를 실시간 4-Pin GPIO 피드백 제어합니다.
-            </p>
-            
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>항목</th>
-                    <th>상세 성능 및 로컬 제어 사양</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>제어 보드</strong></td>
-                    <td>안드로이드 14 OS 구동 프로세서 및 고속 정전식 멀티 터치 스크린 연동</td>
-                  </tr>
-                  <tr>
-                    <td><strong>살균 정밀 스펙</strong></td>
-                    <td>공인 테스트 챔버 기준 황색포도상구균 및 대장균 <strong>99.99% 살균</strong> 검증</td>
-                  </tr>
-                  <tr>
-                    <td><strong>악취 탈취력</strong></td>
-                    <td>KSTR 시험 성적 기준 암모니아 <strong>92.0%</strong>, 황화수소 <strong>97.5% 제거</strong></td>
-                  </tr>
-                  <tr>
-                    <td><strong>I/O 인터페이스</strong></td>
-                    <td>로컬 4-Pin GPIO (CONT_1, CONT_2) 연동 강/중/약 이온 발생 제어</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="slide-visual">
-            <div class="interactive-card">
-              <div class="card-title">로컬 4-Pin GPIO 팬 제어 시뮬레이터</div>
-              <p style="font-size: 0.85rem; color: #94A3B8; margin-bottom: 0.75rem;">
-                센서 수치 연산에 대응하는 수동 GPIO 신호 변경을 매핑해 보세요.
-              </p>
-              
-              <div style="display: flex; justify-content: space-around; gap: 0.5rem; margin-bottom: 1rem;">
-                <button class="gpio-btn active" data-speed="off">OFF<span class="gpio-pins">0 0</span></button>
-                <button class="gpio-btn" data-speed="weak">약 풍량<span class="gpio-pins">0 1</span></button>
-                <button class="gpio-btn" data-speed="medium">중 풍량<span class="gpio-pins">1 0</span></button>
-                <button class="gpio-btn" data-speed="strong">강 풍량<span class="gpio-pins">1 1</span></button>
-              </div>
-              
-              <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; font-size: 0.85rem; display: flex; justify-content: space-between;">
-                <span>이온 발생 전원: <strong id="gpio-power-status" style="color: #64748B;">OFF</strong></span>
-                <span>모터 팬 듀티: <strong id="gpio-duty-status" style="color: #64748B;">0%</strong></span>
-              </div>
-            </div>
-            <div class="image-container portrait-container">
-              <img src="assets/slide4.png" alt="32인치 스마트 사이니지 GX룸 목업" class="slide-image">
-              <div class="image-overlay-hud">
-                <div class="hud-badge green"><span class="blink-dot"></span>SPOANY GX SIGNAGE: 연동 완료 (ONLINE)</div>
-                <div class="hud-badge cyan">CO₂ FEEDBACK: 자율 작동 (AUTO)</div>
-              </div>
-              <div class="image-overlay-bottom-hud">
-                <span>사이니지 사양: 32" ANDROID 14 TABLET</span>
-                <span>설치 구조: 거울 매립형 (FLUSH MIRROR MOUNT)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SLIDE 5: Open Zone Solution -->
-        <div class="slide" id="slide-5">
-          <div class="slide-info">
-            <span class="slide-number">SLIDE 05 / OPEN ZONE SOLUTION</span>
-            <h2 class="slide-title">대면적 오픈 존 패키지:<br>STB × 천장형 공조 연동</h2>
-            <p class="slide-description">
-              벽체가 없는 광활한 유산소 머신 존과 프리웨이트 구역은 복합 센서와 천장 매립형 공조를 셋톱박스(STB)로 유선 연동합니다. 환경 오염이 예측 연산되면 배기 상단의 다발형 고출력 플라즈마 모듈을 가동하여 공조 라인 자체를 살균 터널로 업그레이드합니다.
-            </p>
-            
-            <div class="slide-features">
-              <div class="feature-item">
-                <div class="feature-icon">✓</div>
-                <div class="feature-text">
-                  <h4>공조 덕트 연동 살균</h4>
-                  <p>센터 내 기존 송풍 덕트에 빌트인 매립하여 급기되는 공기 자체를 필터 교체 없이 실시간 정화.</p>
-                </div>
-              </div>
-              <div class="feature-item">
-                <div class="feature-icon">✓</div>
-                <div class="feature-text">
-                  <h4>안드로이드 STB 통합 모니터링</h4>
-                  <p>구역 내 설치된 무선 복합 센서와 통신하여 대화면 매장 TV로 자율 케어 대시보드 표출.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="slide-visual">
-            <div class="interactive-card">
-              <div class="card-title">공간별 실시간 복합 센서 현황 비교</div>
-              <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
-                <button class="toggle-btn active" id="btn-sensor-gx" style="padding: 0.4rem 1rem; font-size: 0.8rem;">G.X / 스피닝 룸</button>
-                <button class="toggle-btn" id="btn-sensor-open" style="padding: 0.4rem 1rem; font-size: 0.8rem;">오픈 유산소 존</button>
-              </div>
-              
-              <div class="metrics-grid" style="margin-top: 0;">
-                <div class="metric-card">
-                  <div class="metric-label">미세먼지 (PM2.5)</div>
-                  <div class="metric-value" id="val-sensor-pm">8 ㎍/㎥</div>
-                </div>
-                <div class="metric-card">
-                  <div class="metric-label">암모니아 (땀냄새)</div>
-                  <div class="metric-value" id="val-sensor-nh3">0.1 ppm</div>
-                </div>
-                <div class="metric-card">
-                  <div class="metric-label">황화수소 (악취)</div>
-                  <div class="metric-value" id="val-sensor-h2s">0.02 ppm</div>
-                </div>
-              </div>
-            </div>
-            <div class="image-container">
-              <img src="assets/slide5.png" alt="천장 공조 연동 플라즈마 모듈" class="slide-image">
-              <div class="image-overlay-hud">
-                <div class="hud-badge cyan"><span class="blink-dot"></span>DUCT IONIZER FLUID: 공조 기류 공급 중 (ON)</div>
-                <div class="hud-badge orange">ION RATE: 강 (HIGH VOLTAGE)</div>
-              </div>
-              <div class="image-overlay-bottom-hud">
-                <span>제어 연동: STB 4-Pin GPIO CONTROL</span>
-                <span>설치 구역: MAIN VENTILATION SHAFT</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SLIDE 6: Project Milestone & Roadmap -->
-        <div class="slide" id="slide-6">
-          <div class="slide-info">
-            <span class="slide-number">SLIDE 06 / PROJECT MILESTONE</span>
-            <h2 class="slide-title">1단계 PoC 실증을 통한<br>안전한 비즈니스 로드맵</h2>
-            <p class="slide-description">
-              무작정 전국 지점 공조망을 통합하지 않습니다. 우선 스포애니 직영 거점 매장 1곳의 독립형 룸과 공조기에 장비를 공급하여 자율 세정 알고리즘과 정화 효과를 1차 실증(PoC)하고, 본사 관리 DB와 모바일 앱 메뉴로 단계적 연동해 확산합니다.
-            </p>
-            
-            <div class="roadmap-timeline">
-              <div class="roadmap-phase active" data-phase="1">
-                <div class="phase-header">
-                  <div class="phase-title-group">
-                    <div class="phase-number">1</div>
-                    <span class="phase-title">1단계: 거점 지점 단독형 PoC (1~2개월)</span>
-                  </div>
-                  <span class="phase-date">준비 완료</span>
-                </div>
-                <div class="phase-details">
-                  <label class="detail-task"><input type="checkbox" checked disabled> 사이니지 일체형 전극 모듈 하드웨어 하우징 양산 완료</label>
-                  <label class="detail-task"><input type="checkbox" checked disabled> KCL 공인 오존프리 및 탈취 살균 성적서 획득</label>
-                  <label class="detail-task"><input type="checkbox" id="chk-poc-3"> 특정 거점 지점 내부 기기 실장 및 로컬 4-Pin 제어 튜닝</label>
-                </div>
-              </div>
-
-              <div class="roadmap-phase" data-phase="2">
-                <div class="phase-header">
-                  <div class="phase-title-group">
-                    <div class="phase-number">2</div>
-                    <span class="phase-title">2단계: 전국 직영점 확산 및 모바일 연동</span>
-                  </div>
-                  <span class="phase-date">PoC 완료 후</span>
-                </div>
-                <div class="phase-details">
-                  <label class="detail-task"><input type="checkbox" id="chk-nation-1"> PoC 기간 정량 실내 미세먼지/CO₂ 감소율 수치화 분석</label>
-                  <label class="detail-task"><input type="checkbox" id="chk-nation-2"> 스포애니 본사 서버 API 규격 협의 및 회원용 모바일 앱 연동</label>
-                  <label class="detail-task"><input type="checkbox" id="chk-nation-3"> 전국 직영 매장 자율 정화 시스템 순차 이식</label>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="slide-visual">
-            <div class="interactive-card">
-              <div class="card-title">로드맵 개발 진척도 시뮬레이션</div>
-              <div class="sys-metrics" style="gap: 0.5rem; margin-bottom: 0.5rem;">
-                <div class="sys-metric-item">
-                  <div class="sys-label-group">
-                    <span>전체 마일스톤 달성률</span>
-                    <span id="milestone-progress-text">33%</span>
-                  </div>
-                  <div class="sys-bar-bg">
-                    <div class="sys-bar-fill" id="milestone-progress-fill" style="width: 33.3%;"></div>
-                  </div>
-                </div>
-              </div>
-              <p style="font-size: 0.85rem; color: #94A3B8; line-height: 1.4;">
-                위 단계별 체크박스를 클릭하여 PoC 완료 및 확산 태스크를 수행해 가며 전체 진척도 변화를 테스트하세요.
-              </p>
-              <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
-                <button class="btn-primary" id="btn-milestone-next" style="padding: 0.6rem 1.5rem; font-size: 0.9rem; border-radius: 8px;">
-                  대시보드 데모 바로가기
-                </button>
-              </div>
-            </div>
-            <div class="image-container" id="roadmap-img-container">
-              <img src="assets/slide6.png" alt="스포애니 사업 로드맵 마일스톤" class="slide-image">
-              <div class="image-overlay-hud">
-                <div class="hud-badge green"><span class="blink-dot"></span>PROJECT STATUS: 1단계 PoC (POC STAGE)</div>
-                <div class="hud-badge orange">TARGET COUNT: 전국 100+ 지점</div>
-              </div>
-              <div class="image-overlay-bottom-hud">
-                <span>로드맵 단계: 1단계 PoC 실증 -> 2단계 전사 확산</span>
-                <span>목표 지표: 회원 만족도 95% 달성</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
+    <header class="header">
+      <div class="container header__inner">
+        <a href="#top" class="brand" aria-label="스포애니 공기질 관리 제안 처음으로">
+          <span class="brand__bar" aria-hidden="true"></span>
+          SPOANY <span style="color:var(--spoany-brand)">AIR</span>
+          <span class="brand__by">by AICube</span>
+        </a>
+        <nav class="nav" aria-label="주요 섹션">
+          <a href="#problem">문제</a>
+          <a href="#solution">제안 구조</a>
+          <a href="#clean">오토 클리닝</a>
+          <a href="#enclosed">밀폐 룸</a>
+          <a href="#open">오픈 존</a>
+          <a href="#roadmap">로드맵</a>
+          <a href="#faq">FAQ</a>
+          <a href="#cta" class="nav__cta">미팅 요청</a>
+        </nav>
+        <button class="nav-toggle" id="navToggle" aria-label="메뉴 열기" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
       </div>
-    </div>
+      <nav class="mobile-nav" id="mobileNav" aria-label="모바일 메뉴">
+        <a href="#problem">문제</a>
+        <a href="#solution">제안 구조</a>
+        <a href="#clean">오토 클리닝</a>
+        <a href="#enclosed">밀폐 룸</a>
+        <a href="#open">오픈 존</a>
+        <a href="#roadmap">로드맵</a>
+        <a href="#faq">FAQ</a>
+        <a href="#cta">미팅 요청</a>
+      </nav>
+    </header>
 
-    <!-- Live AI Dashboard Section -->
-    <div class="dashboard-container" id="dashboard-container">
-      
-      <!-- Top Summary Metrics Bar -->
-      <div class="summary-bar">
-        <div class="sum-card" id="sum-card-status">
-          <div class="sum-icon green">🍃</div>
-          <div class="sum-details">
-            <span class="sum-label">지점 실내 공기 상태</span>
-            <span class="sum-value" id="db-overall-status">매우 좋음</span>
+    <main id="top">
+
+      <!-- HERO -->
+      <section class="hero">
+        <div class="container">
+          <p class="eyebrow">스포애니 × AICube · 자율 엣지 공기 케어 인프라 제안</p>
+          <h1 class="hero__title"><span class="q">"숨 막히는 밀폐 룸의<br>공기를 실시간으로 바꾸다"</span></h1>
+          <p class="hero__lead">
+            회원들이 스포애니에 들어선 순간부터 나가는 순간까지 호흡기 건강에 대한 어떠한 불안감도 느끼지 않도록
+            자율적으로 공간을 정화하는 <strong>'온디바이스 자율 실내 공기질 관리 시스템'</strong>을 제안합니다.
+            특허 '전극 자율 청소 플라즈마 모듈'과 안드로이드 스마트 기기를 로컬 4-Pin GPIO로 연동해,
+            유지보수 공수 없이 24시간 정화 터널을 가동합니다.
+          </p>
+          <div class="hero__cta">
+            <a class="btn btn--primary" href="#cta">스포애니팀 미팅 요청</a>
+            <a class="btn btn--ghost" href="dashboard.html" title="실시간 스마트 공기질 대시보드 데모">실시간 대시보드 데모</a>
+          </div>
+          <ul class="hero__chips" aria-label="핵심 키워드">
+            <li>오존프리 · KCL 공인 시험</li>
+            <li>전극 오토 클리닝 특허</li>
+            <li>무필터 · Maintenance Free</li>
+            <li>로컬 4-Pin GPIO 제어</li>
+            <li>32인치 일체형 정화 허브</li>
+            <li>공조 덕트 연동 살균</li>
+          </ul>
+          <figure class="hero__visual reveal">
+            <img src="assets/slide1.png" alt="스포애니 자율 정화 시스템 전경">
+            <figcaption class="hero__visual-note">지점 내 자율 정화 시스템 전경 (렌더링 시안 — 미팅 시 실촬영 하드웨어 컷으로 교체)</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- BENTO SUMMARY -->
+      <section class="section--tight" aria-label="핵심 요약">
+        <div class="container">
+          <div class="bento">
+            <div class="bento__cell bento__cell--hl bento__cell--wide reveal">
+              <div class="bento__num">99.99% <small>살균</small></div>
+              <div class="bento__label">공인 테스트 챔버 기준 황색포도상구균·대장균 살균 검증 — 밀폐 룸 일체형 허브와 덕트형 모듈이 같은 플라즈마 코어를 공유합니다</div>
+            </div>
+            <div class="bento__cell reveal">
+              <div class="bento__num">Trace 미만</div>
+              <div class="bento__label">KCL 공인 시험 오존 발생농도 — 오존프리로 24시간 상시 가동 가능</div>
+            </div>
+            <div class="bento__cell reveal">
+              <div class="bento__num">92.0<small>%</small> · 97.5<small>%</small></div>
+              <div class="bento__label">KSTR 시험 기준 암모니아·황화수소(땀 냄새) 제거율</div>
+            </div>
+            <div class="bento__cell reveal">
+              <div class="bento__num">12시간</div>
+              <div class="bento__label">마이크로모터·실리콘 브러쉬가 방전 전극을 자율 청소하는 주기 (특허 메커니즘)</div>
+            </div>
+            <div class="bento__cell reveal">
+              <div class="bento__num">무필터</div>
+              <div class="bento__label">필터 교체·수동 청소 공수가 없는 Maintenance Free 구조</div>
+            </div>
+            <div class="bento__cell reveal">
+              <div class="bento__num">1~2개월</div>
+              <div class="bento__label">거점 지점 1곳 단독형 PoC — 본사 시스템 통합 없이 실증 시작</div>
+            </div>
           </div>
         </div>
+      </section>
 
-        <div class="sum-card">
-          <div class="sum-icon cyan">📊</div>
-          <div class="sum-details">
-            <span class="sum-label">평균 이산화탄소 (CO₂)</span>
-            <span class="sum-value" id="db-co2-val">480 ppm</span>
+      <!-- EXECUTIVE SUMMARY -->
+      <section class="section" aria-labelledby="exec-title">
+        <div class="container">
+          <p class="eyebrow">경영진 요약</p>
+          <h2 class="section__title" id="exec-title">보이지 않는 '공기의 질'을<br>재등록의 근거로 바꿉니다</h2>
+          <p class="section__lead">
+            피트니스는 호흡량이 일반 공간 대비 10배 이상 급증하는 고위험 밀집 공간이고,
+            밀폐된 G.X·스피닝 룸은 수업 시작 후 단 15분 만에 이산화탄소 농도가 환경부 기준치를 초과합니다.
+            본 제안은 기존 공기청정 설비의 한계(필터 오염, 지속적인 수동 청소 공수)를
+            <strong>'전극 오토 클리닝 특허 모듈 + 안드로이드 스마트 기기 로컬 제어'</strong>로 돌파하는 구성입니다.
+            지점은 유지보수 공수 없이 24시간 가동하고, 회원은 공기 상태를 매장 화면 데이터로 확인하며,
+            본사는 "공기까지 자율 관리하는 안심 위생 과학 피트니스"라는 브랜드 포지션을 확보합니다.
+          </p>
+        </div>
+      </section>
+
+      <!-- PROBLEM -->
+      <section class="section section--alt" id="problem" aria-labelledby="problem-title">
+        <div class="container">
+          <p class="eyebrow">문제 정의</p>
+          <h2 class="section__title" id="problem-title">회원이 피트니스에서 느끼는 공기 중 이면</h2>
+          <p class="section__lead">
+            밀폐된 G.X / 스피닝 룸은 단 15분 만에 이산화탄소 수치가 환경부 기준치를 초과하고,
+            땀 냄새(암모니아·황화수소)가 정체됩니다. 텁텁한 호흡과 불쾌한 냄새는 운동 효율을 떨어뜨리고
+            <strong>재등록 의사를 서서히 꺾는 보이지 않는 원인</strong>입니다.
+          </p>
+          <div class="card-grid">
+            <div class="card reveal">
+              <h3><span class="dot" aria-hidden="true"></span>밀폐 룸 CO₂ 급상승</h3>
+              <p>스피닝, GX 등 유산소 그룹 운동 시 급격한 이산화탄소 상승으로 두통 및 답답함 유발.</p>
+            </div>
+            <div class="card reveal">
+              <h3><span class="dot" aria-hidden="true"></span>복합 악취 정체</h3>
+              <p>땀 냄새(암모니아, 황화수소 등)와 부유 미세 비말 정체로 지점 청결 신뢰도 급감.</p>
+            </div>
+          </div>
+
+          <!-- Interactive widget: enclosed-room time simulator -->
+          <div class="widget reveal" aria-label="밀폐 룸 시간 경과 시뮬레이터">
+            <div class="widget__head">
+              <strong>밀폐 룸 시간 경과 시뮬레이터 — 슬라이더를 움직여 보세요</strong>
+              <span class="widget__tag" id="sim-time">15분 경과 (매우 혼잡)</span>
+            </div>
+            <label for="co2-slider" class="sr-only">수업 경과 시간 (분)</label>
+            <input type="range" id="co2-slider" class="widget__range" min="0" max="45" value="15">
+            <div class="widget__scale" aria-hidden="true">
+              <span>시작 직후 (여유)</span>
+              <span>45분 경과 (포화)</span>
+            </div>
+            <div class="sim-grid">
+              <div class="sim-cell">
+                <div class="sim-cell__label">이산화탄소 (CO₂)</div>
+                <div class="sim-cell__val mid" id="sim-co2">1080 ppm</div>
+              </div>
+              <div class="sim-cell">
+                <div class="sim-cell__label">땀냄새 유해 가스</div>
+                <div class="sim-cell__val mid" id="sim-odor">보통 (환기 권장)</div>
+              </div>
+              <div class="sim-cell">
+                <div class="sim-cell__label">예상 재등록지수</div>
+                <div class="sim-cell__val mid" id="sim-sat">보통</div>
+              </div>
+            </div>
+            <p class="widget__note">수업 인원 밀집 상황을 가정한 시연용 연출 수치입니다. 실측 농도와 감소율은 PoC 단계에서 검증합니다. 지점 전체 공기 흐름은 <a href="dashboard.html" style="color:var(--neon-cyan)">실시간 대시보드 데모</a>에서 조작해 볼 수 있습니다.</p>
+          </div>
+
+          <figure class="visual reveal">
+            <img src="assets/slide2.png" alt="GX룸 실내 공기 오염 열지도" loading="lazy">
+            <figcaption>G.X / 스피닝 룸 실내 공기 오염 열지도 (렌더링 시안)</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- SOLUTION -->
+      <section class="section" id="solution" aria-labelledby="solution-title">
+        <div class="container">
+          <p class="eyebrow">제안 구조</p>
+          <h2 class="section__title" id="solution-title">공간 레이아웃이 다르면, 정화 패키지도 다릅니다</h2>
+          <p class="section__lead">
+            스포애니 지점은 벽체와 문으로 차단된 <strong>'독립형 밀폐 룸'</strong>과 기구가 밀집된
+            <strong>'대면적 오픈 존'</strong>으로 레이아웃이 상이합니다. 이에 맞춰 하드웨어 구성을
+            2가지 패키지로 나눠 배치합니다.
+          </p>
+
+          <div class="table-wrap reveal">
+            <table class="cmp">
+              <caption class="sr-only">스포애니 공간 유형별 정화 하드웨어 패키지 비교</caption>
+              <thead>
+                <tr>
+                  <th scope="col">구분</th>
+                  <th scope="col">독립형 밀폐 룸 패키지</th>
+                  <th scope="col">대면적 오픈 존 패키지</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">적용 공간</th>
+                  <td>G.X 룸 · 스피닝 룸 · 락커룸</td>
+                  <td>유산소 존 · 프리웨이트 존</td>
+                </tr>
+                <tr>
+                  <th scope="row">적용 장비</th>
+                  <td>안드로이드 14 OS 기반 <strong>32인치 스마트 터치 디바이스</strong> + 내장형 고감도 CO₂ 센서 + 초소형 플라즈마 이온화 모듈</td>
+                  <td>안드로이드 <strong>스마트 셋톱박스(STB)</strong> + 무선 공간 복합 환경 센서 + 천장 매립 덕트 연동형 플라즈마 이온화 장치</td>
+                </tr>
+                <tr>
+                  <th scope="row">설치 구조</th>
+                  <td>강사 프로필·클래스 시간표를 표출하는 32인치 벽면 디스플레이에 센서·살균 모듈 <strong>일체형 빌트인 매립</strong></td>
+                  <td>벽면 대형 TV에 STB 연결 + 공조 덕트 내부·공기 배출구 상단에 <strong>다발형 고출력 플라즈마 모듈</strong> 연동</td>
+                </tr>
+                <tr>
+                  <th scope="row">표출 화면</th>
+                  <td>강사 스케줄 디지털 보드 + 실시간 공기질 상태</td>
+                  <td>매장 대형 TV 자율 케어 대시보드</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="table__caption">&lt;표.1&gt; 공간 유형별 하드웨어 패키지 구성 — 「자율 실내 공기질 관리 시스템 제안서」 Ⅱ장 배치안 기준.</p>
+
+          <!-- FLOW -->
+          <div class="flow reveal" role="img" aria-label="데이터 흐름: 복합 환경 센서가 오염도를 계측하고, 안드로이드 스마트 기기가 온디바이스로 연산해 로컬 4-Pin GPIO로 플라즈마 모듈과 팬을 제어, 밀폐 룸과 공조 덕트를 정화">
+            <div class="flow__node">
+              <span class="flow__pill">SENSING</span>
+              <strong>복합 환경 센서</strong>
+              <small>내장형 고감도 CO₂ 센서 · 무선 공간 복합 센서 — 실내 오염도 실시간 계측</small>
+            </div>
+            <div class="flow__arrow" aria-hidden="true">↓</div>
+            <div class="flow__node flow__node--core">
+              <span class="flow__pill">ON-DEVICE</span>
+              <strong>안드로이드 스마트 기기 (32인치 허브 · STB)</strong>
+              <small>지점 안에서 오염을 예측 연산 — 외부 서버 없이 로컬 완결</small>
+            </div>
+            <div class="flow__arrow" aria-hidden="true">↓</div>
+            <div class="flow__node">
+              <span class="flow__pill">4-PIN GPIO</span>
+              <strong>로컬 핀 신호 제어 (CONT_1 · CONT_2)</strong>
+              <small>이온 발생량 · 팬 듀티를 강/중/약/OFF 4단계로 전력 효율 제어</small>
+            </div>
+            <div class="flow__arrow" aria-hidden="true">↓</div>
+            <div class="flow__node">
+              <span class="flow__pill">PURIFY</span>
+              <strong>플라즈마 이온화 모듈 가동</strong>
+              <small>밀폐 룸 일체형 정화 + 공조 덕트 살균 터널 — 12시간 주기 전극 자율 세정</small>
+            </div>
+          </div>
+          <p class="flow__caption">&lt;그림.1&gt; 센서 → 연산 → 제어 → 정화로 이어지는 로컬 피드백 루프 — 본사 서버 연동 없이 지점 안에서 완결됩니다.</p>
+        </div>
+      </section>
+
+      <!-- CLEANING TECH -->
+      <section class="section section--alt" id="clean" aria-labelledby="clean-title">
+        <div class="container">
+          <p class="eyebrow">핵심 기술</p>
+          <h2 class="section__title" id="clean-title">유지보수 비용 전무:<br>자율 전극 오토 클리닝</h2>
+          <p class="section__lead">
+            사다리를 타고 올라가 필터를 닦아내는 번거로움은 끝났습니다. 전원이 인가되는 순간과 매 12시간 주기마다
+            내부의 <strong>고정밀 마이크로모터와 실리콘 브러쉬가 구동되어 침상 방전극에 쌓인 먼지를 자율 청소</strong>합니다.
+            관리자의 손이 닿지 않는 천장 공조 내부에 매립해도 반영구적으로 초기 살균 효율을 유지합니다.
+          </p>
+          <div class="card-grid">
+            <div class="card reveal">
+              <h3><span class="dot" aria-hidden="true"></span>오존프리 (Ozone Free) 살균</h3>
+              <p>KCL 공인 시험 오존 발생농도 Trace(미량) 미만 획득 — 사람이 밀폐 룸에서 격렬히 운동하는 중에도 24시간 상시 가동이 가능합니다.</p>
+            </div>
+            <div class="card reveal">
+              <h3><span class="dot" aria-hidden="true"></span>오토 클리닝 메커니즘 특허</h3>
+              <p>12시간 주기 자동 브러싱으로 전극 부착 먼지를 제거해 반영구 성능을 유지합니다 (Maintenance Free — 필터 교체 공수 없음).</p>
+            </div>
+            <div class="card reveal">
+              <h3><span class="dot" aria-hidden="true"></span>폐쇄형 함체 안전 설계</h3>
+              <p>고출력 전압이 발생하는 침상부는 외경 이격과 폐쇄형 함체 구조로 설계해 신체·금속 물질 접촉을 원천 차단합니다.</p>
+            </div>
+            <div class="card reveal">
+              <h3><span class="dot" aria-hidden="true"></span>초소형 모듈 규격</h3>
+              <p>58mm × 90mm × 17mm — 32인치 사이니지 내부는 물론 공조 덕트·시스템 에어컨 안쪽까지 완전 매립됩니다.</p>
+            </div>
+          </div>
+          <figure class="visual reveal">
+            <img src="assets/slide3.png" alt="자율 전극 청소 브러쉬 렌더링" loading="lazy">
+            <figcaption>플라즈마 모듈 내부 마이크로모터·실리콘 브러쉬 구동 렌더링 (시안)</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ENCLOSED ROOM PACKAGE -->
+      <section class="section" id="enclosed" aria-labelledby="enclosed-title">
+        <div class="container">
+          <p class="eyebrow">밀폐 룸 패키지</p>
+          <h2 class="section__title" id="enclosed-title">독립형 밀폐 룸:<br>32인치 일체형 정화 허브</h2>
+          <p class="section__lead">
+            G.X 룸과 스피닝 룸 전면 거울 벽에 일체형 매립 설치되는 32인치 디바이스입니다.
+            강사 스케줄과 프로필을 보여주는 <strong>디지털 보드 역할과 동시에</strong>, 내장형 고감도 CO₂ 센서로
+            이온 풍량과 팬 듀티를 실시간 4-Pin GPIO 피드백 제어합니다.
+          </p>
+
+          <div class="table-wrap reveal">
+            <table class="cmp">
+              <caption class="sr-only">32인치 일체형 정화 허브 상세 성능 사양</caption>
+              <thead>
+                <tr>
+                  <th scope="col">항목</th>
+                  <th scope="col">상세 성능 및 로컬 제어 사양</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">제어 보드</th>
+                  <td>안드로이드 14 OS 구동 프로세서 및 고속 정전식 멀티 터치 스크린 연동</td>
+                </tr>
+                <tr>
+                  <th scope="row">살균 정밀 스펙</th>
+                  <td>공인 테스트 챔버 기준 황색포도상구균 및 대장균 <strong>99.99% 살균</strong> 검증</td>
+                </tr>
+                <tr>
+                  <th scope="row">악취 탈취력</th>
+                  <td>KSTR 시험 성적 기준 암모니아 <strong>92.0%</strong>, 황화수소 <strong>97.5% 제거</strong></td>
+                </tr>
+                <tr>
+                  <th scope="row">I/O 인터페이스</th>
+                  <td>로컬 4-Pin GPIO (CONT_1, CONT_2) 연동 강/중/약 이온 발생 제어</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="table__caption">&lt;표.2&gt; 32인치 일체형 정화 허브 사양 — 시험 성적서 원본은 미팅에서 제공합니다.</p>
+
+          <figure class="visual reveal">
+            <img src="assets/slide4.png" alt="32인치 스마트 사이니지 GX룸 거울 매립 목업" loading="lazy">
+            <figcaption>32인치 사이니지 거울 매립(Flush Mirror Mount) 설치 목업 (시안)</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- OPEN ZONE PACKAGE -->
+      <section class="section section--alt" id="open" aria-labelledby="open-title">
+        <div class="container">
+          <p class="eyebrow">오픈 존 패키지</p>
+          <h2 class="section__title" id="open-title">대면적 오픈 존:<br>STB × 천장형 공조 연동</h2>
+          <p class="section__lead">
+            벽체가 없는 광활한 유산소 머신 존과 프리웨이트 구역은 복합 센서와 천장 매립형 공조를
+            셋톱박스(STB)로 유선 연동합니다. 환경 오염이 예측 연산되면 배기 상단의 다발형 고출력 플라즈마 모듈을 가동해
+            <strong>공조 라인 자체를 살균 터널로 업그레이드</strong>합니다.
+          </p>
+          <div class="card-grid">
+            <div class="card reveal">
+              <h3><span class="dot" aria-hidden="true"></span>공조 덕트 연동 살균</h3>
+              <p>센터 내 기존 송풍 덕트에 빌트인 매립하여 급기되는 공기 자체를 필터 교체 없이 실시간 정화.</p>
+            </div>
+            <div class="card reveal">
+              <h3><span class="dot" aria-hidden="true"></span>안드로이드 STB 통합 모니터링</h3>
+              <p>구역 내 설치된 무선 복합 센서와 통신하여 대화면 매장 TV로 자율 케어 대시보드 표출.</p>
+            </div>
+          </div>
+          <div class="callout reveal">
+            매장 TV에 표출되는 구역별 CO₂·미세먼지·기류 순환 화면은
+            <a href="dashboard.html">실시간 대시보드 데모</a>에서 회원수·외부 오염도를 직접 조절하며 확인할 수 있습니다.
+          </div>
+          <figure class="visual reveal">
+            <img src="assets/slide5.png" alt="천장 공조 덕트 연동 플라즈마 모듈" loading="lazy">
+            <figcaption>천장 공조 덕트 내 다발형 플라즈마 모듈 연동 구조 (시안)</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ROADMAP -->
+      <section class="section" id="roadmap" aria-labelledby="roadmap-title">
+        <div class="container">
+          <p class="eyebrow">도입 로드맵</p>
+          <h2 class="section__title" id="roadmap-title">1단계 PoC 실증을 통한<br>안전한 비즈니스 로드맵</h2>
+          <p class="section__lead">
+            무작정 전국 지점 공조망을 통합하지 않습니다. 우선 <strong>스포애니 직영 거점 매장 1곳</strong>의 독립형 룸과 공조기에
+            장비를 공급하여 자율 세정 알고리즘과 정화 효과를 1차 실증(PoC)하고,
+            본사 관리 DB와 모바일 앱 메뉴로 단계적 연동해 확산합니다.
+          </p>
+          <div class="phase-grid">
+            <div class="phase phase--now reveal">
+              <span class="phase__no" aria-hidden="true">1</span>
+              <h3>거점 지점 단독형 PoC <span class="when">· 1~2개월</span></h3>
+              <ul>
+                <li>사이니지 일체형 전극 모듈 하드웨어 하우징 <strong>양산 완료</strong></li>
+                <li>KCL 공인 오존프리 및 탈취·살균 성적서 <strong>획득 완료</strong></li>
+                <li>거점 지점 내부 기기 실장 및 로컬 4-Pin 제어 튜닝</li>
+              </ul>
+            </div>
+            <div class="phase reveal">
+              <span class="phase__no" aria-hidden="true">2</span>
+              <h3>전국 직영점 확산 + 모바일 연동 <span class="when">· PoC 완료 후</span></h3>
+              <ul>
+                <li>PoC 기간 실내 미세먼지·CO₂ 감소율 수치화 분석</li>
+                <li>스포애니 본사 서버 API 규격 협의 및 회원용 모바일 앱 연동</li>
+                <li>전국 직영 매장 자율 정화 시스템 순차 이식</li>
+              </ul>
+            </div>
+          </div>
+          <figure class="visual reveal">
+            <img src="assets/slide6.png" alt="스포애니 사업 로드맵 마일스톤" loading="lazy">
+            <figcaption>1단계 PoC 실증 → 2단계 전사 확산 로드맵 (시안)</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="section section--alt" id="faq" aria-labelledby="faq-title">
+        <div class="container">
+          <p class="eyebrow">FAQ</p>
+          <h2 class="section__title" id="faq-title">검토 단계에서 가장 자주 나오는 질문</h2>
+          <div class="faq reveal">
+            <details>
+              <summary>플라즈마 살균 장치인데 오존이 발생하지 않나요?</summary>
+              <p class="a">한국건설생활환경시험연구원(KCL) 공인 시험에서 오존 발생농도 Trace(미량) 미만을 획득했습니다. 회원이 밀폐 룸에서 격렬한 운동으로 호흡량이 커진 상태에서도 24시간 정격풍량 상시 가동이 가능한 등급입니다.</p>
+            </details>
+            <details>
+              <summary>필터 청소·교체 같은 유지보수는 누가 하나요?</summary>
+              <p class="a">아무도 하지 않아도 됩니다. 전원 인가 시점과 매 12시간 주기마다 내장 마이크로모터와 실리콘 브러쉬가 방전 전극의 먼지를 자율 청소하는 특허 메커니즘이라, 필터 교체 공수 없이(Maintenance Free) 천장 공조 내부에 매립해도 반영구적으로 성능이 유지됩니다.</p>
+            </details>
+            <details>
+              <summary>본사 서버나 스포애니 앱과 먼저 연동해야 하나요?</summary>
+              <p class="a">아닙니다. 1단계 PoC는 지점 1곳에 단독형 기기·센서만 배치하고 로컬 4-Pin GPIO로 제어하는 구성이라 본사 시스템 통합이 필요 없습니다. 본사 API 규격 협의와 회원용 모바일 앱 연동은 PoC 실증 데이터를 확인한 뒤 2단계에서 진행합니다.</p>
+            </details>
+            <details>
+              <summary>고전압 모듈을 회원 공간에 설치해도 안전한가요?</summary>
+              <p class="a">이온 생성에 쓰이는 고출력 전압부는 침상부 외경 이격과 폐쇄형 함체 구조로 설계되어 신체·금속 물질이 닿을 수 없습니다. 밀폐 룸에서는 32인치 디스플레이 내부에 일체형 매립되고, 오픈 존에서는 천장 덕트 내부에 설치되어 물리 접촉이 원천 차단됩니다.</p>
+            </details>
           </div>
         </div>
+      </section>
 
-        <div class="sum-card">
-          <div class="sum-icon yellow">💨</div>
-          <div class="sum-details">
-            <span class="sum-label">미세먼지 (PM2.5)</span>
-            <span class="sum-value" id="db-pm-val">6 ㎍/㎥</span>
+      <!-- CTA -->
+      <section class="cta" id="cta" aria-labelledby="cta-title">
+        <div class="container">
+          <p class="eyebrow">스포애니팀을 위한 다음 단계</p>
+          <h2 class="cta__title" id="cta-title">직영 거점 지점 1곳, 1~2개월 PoC로<br>공기의 변화부터 확인하시죠</h2>
+          <p class="cta__lead">
+            하드웨어 하우징 양산과 공인 성적서 확보는 끝났습니다. 남은 것은 지점 현장 실장과 실측 검증 —
+            도입 여부는 PoC 데이터를 보고 결정하시면 됩니다.
+          </p>
+          <div class="cta__btns">
+            <a class="btn btn--primary" href="mailto:mkt@aicube.co.kr?subject=%EC%8A%A4%ED%8F%AC%EC%95%A0%EB%8B%88%20%EA%B3%B5%EA%B8%B0%EC%A7%88%20%EA%B4%80%EB%A6%AC%20%EC%A0%9C%EC%95%88%20%EB%AF%B8%ED%8C%85%20%EC%9A%94%EC%B2%AD">미팅 일정 잡기</a>
+            <a class="btn btn--ghost" href="dashboard.html">실시간 대시보드 데모 보기</a>
           </div>
+          <p class="cta__note">제안사: 에이아이큐브(AICube) · 문의 mkt@aicube.co.kr</p>
         </div>
+      </section>
+    </main>
 
-        <div class="sum-card">
-          <div class="sum-icon orange">✨</div>
-          <div class="sum-details">
-            <span class="sum-label">공인 악취 탈취율</span>
-            <span class="sum-value" id="db-deodor-ratio">94.8%</span>
-          </div>
-        </div>
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="container">
+        <h4>근거 및 참고</h4>
+        <ul>
+          <li>오존 발생농도 Trace(미량) 미만: 한국건설생활환경시험연구원(KCL) 공인 오존 시험 성적 기준.</li>
+          <li>황색포도상구균·대장균 99.99% 살균: 공인 테스트 챔버 시험 기준.</li>
+          <li>암모니아 92.0% · 황화수소 97.5% 제거: KSTR 시험 성적 기준.</li>
+          <li>시험 성적서 원본과 오토 클리닝 특허 명세는 미팅에서 제공하며, 하드웨어 구성·배치안은 「스포애니 자율 실내 공기질 관리 시스템 도입 제안서」 원문을 따릅니다.</li>
+          <li>본문 이미지는 렌더링 시안으로, 미팅 시 실촬영 하드웨어·기기 패킹 컷으로 교체합니다.</li>
+        </ul>
+        <p class="footer__copy">© <span id="year"></span> AICube · 본 자료는 스포애니 제안 목적의 대외비 문서입니다.
+          <a href="dashboard.html">실시간 대시보드 데모</a> · <a href="https://0spoanymaster.vercel.app/">스포애니 통합 제안 허브</a></p>
       </div>
+    </footer>
+  </div>
 
-      <!-- Real-time Simulation & layout mapping (Left Side) -->
-      <div class="db-grid-row">
-        <div class="col-8 db-card">
-          <div class="db-card-header">
-            <div>
-              <span class="db-card-title">
-                <span class="cctv-rec-dot" style="display:inline-block; margin-right: 4px;"></span>
-                실시간 자율 공조 및 실내 공기 기류 시뮬레이터
-              </span>
-              <span class="db-card-subtitle">지점 도면 내부 공조기 급기 및 플라즈마 이온 기류 순환(파티클 흐름) 시각화</span>
-            </div>
-          </div>
-          
-          <!-- Gymnasium layout map with air particle flow -->
-          <div class="map-wrapper">
-            <div class="map-layout">
-              <!-- Zone 1: G.X Room -->
-              <div class="map-zone" id="zone-gx" data-zonename="G.X 룸">
-                <span class="zone-label">G.X 룸</span>
-                <span class="zone-temp">CO₂: <strong id="zone-co2-gx">450</strong> ppm</span>
-                <div class="zone-status-badge">자율 정화 중</div>
-              </div>
-              
-              <!-- Zone 2: Spinning Room -->
-              <div class="map-zone" id="zone-spinning" data-zonename="스피닝룸">
-                <span class="zone-label">스피닝룸</span>
-                <span class="zone-temp">CO₂: <strong id="zone-co2-spinning">480</strong> ppm</span>
-                <div class="zone-status-badge">자율 정화 중</div>
-              </div>
-              
-              <!-- Zone 3: Cardio Area -->
-              <div class="map-zone" id="zone-cardio" data-zonename="유산소 존">
-                <span class="zone-label">유산소 존 (러닝머신)</span>
-                <span class="zone-temp">CO₂: <strong id="zone-co2-cardio">500</strong> ppm</span>
-                <div class="zone-status-badge">자율 정화 중</div>
-              </div>
-              
-              <!-- Zone 4: Free Weight Area -->
-              <div class="map-zone" id="zone-free" data-zonename="프리웨이트 존">
-                <span class="zone-label">프리웨이트 존</span>
-                <span class="zone-temp">CO₂: <strong id="zone-co2-free">510</strong> ppm</span>
-                <div class="zone-status-badge">자율 정화 중</div>
-              </div>
+  <script>
+  (function () {
+    "use strict";
 
-              <!-- Vent and duct nodes overlay -->
-              <div class="duct-node vent-1" data-desc="천장 매립 공조 배출구 1"></div>
-              <div class="duct-node vent-2" data-desc="천장 매립 공조 배출구 2"></div>
-              <div class="duct-node vent-3" data-desc="천장 매립 공조 배출구 3"></div>
-              <div class="duct-node vent-4" data-desc="천장 매립 공조 배출구 4"></div>
-              
-              <!-- Air particles canvas -->
-              <canvas id="air-particles-canvas"></canvas>
-            </div>
-            
-            <div class="map-legend">
-              <div class="legend-item"><span class="badge-dot" style="background:#00e676;"></span><span>정상 (좋음)</span></div>
-              <div class="legend-item"><span class="badge-dot" style="background:#FFE600;"></span><span>보통 (관심)</span></div>
-              <div class="legend-item"><span class="badge-dot" style="background:#FF2A6D;"></span><span>오염 (경고)</span></div>
-              <div class="legend-item"><span class="badge-dot" style="background:#00e5ff; box-shadow: 0 0 8px #00e5ff;"></span><span>플라즈마 정화 기류</span></div>
-            </div>
-          </div>
-          
-          <!-- Event logs -->
-          <div class="event-log-container" id="event-log-box">
-            <div class="log-entry"><span class="log-time">[12:00:01]</span> <span class="log-msg">Spoany Air Care Hub IoT 데몬 연결 성공... 로컬 게이트웨이 활성화.</span></div>
-            <div class="log-entry"><span class="log-time">[12:00:03]</span> <span class="log-msg">공조 덕트 연동 천장 고출력 플라즈마 이오나이저 로드 상태: 정상.</span></div>
-            <div class="log-entry"><span class="log-time">[12:00:06]</span> <span class="log-msg">G.X 룸 내장형 32인치 디스플레이 연동 이온 풍량 제어 CONT_1 핀 대기 중.</span></div>
-          </div>
-        </div>
-        
-        <!-- Controls & Resources (Right Side) -->
-        <div class="col-4 db-card flex-col">
-          
-          <!-- Controls Panel -->
-          <div class="control-section">
-            <div class="db-card-header" style="padding: 0 0 1rem 0;">
-              <div>
-                <span class="db-card-title">실시간 환경 가상 통제 패널</span>
-                <span class="db-card-subtitle">지점 가용 인원수 및 외부 유입 오염도 인위 조절 테스트</span>
-              </div>
-            </div>
-            
-            <div class="control-group">
-              <div class="control-label-row">
-                <span>지점 내 운동 회원수 (혼잡 발생)</span>
-                <span id="val-occupant-count" class="val-highlight">20 명</span>
-              </div>
-              <input type="range" min="0" max="150" value="20" class="custom-range" id="sim-occupants">
-            </div>
+    // ===== PIN gate (dashboard.html과 동일 세션 키 — 한쪽에서 인증하면 양쪽 모두 열람) =====
+    var PASSWORD = "4342";
+    var SESSION_KEY = "spoany_proposal_auth";
+    var gate = document.getElementById("gate");
+    var content = document.getElementById("content");
+    var input = document.getElementById("gate-input");
+    var errorEl = document.getElementById("gate-error");
 
-            <div class="control-group">
-              <div class="control-label-row">
-                <span>외부 미세먼지 오염도 유입</span>
-                <span id="val-pollution-dust" class="val-highlight">보통 (35 ㎍/㎥)</span>
-              </div>
-              <input type="range" min="10" max="180" value="35" class="custom-range" id="sim-pollution">
-            </div>
+    function unlock() {
+      gate.remove();
+      content.hidden = false;
+      document.body.style.overflow = "";
+      var first = content.querySelector("a, button");
+      if (first) first.focus();
+      initWidgets();
+    }
 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">
-              <span>자율 공조 시스템 모드</span>
-              <div style="display: flex; gap: 0.25rem;">
-                <button class="toggle-btn active" id="btn-mode-auto" style="padding: 0.4rem 1rem; font-size: 0.8rem;">자율 AI 모드</button>
-                <button class="toggle-btn" id="btn-mode-manual" style="padding: 0.4rem 1rem; font-size: 0.8rem;">수동 통제</button>
-              </div>
-            </div>
-          </div>
+    function trackUnlockEvent() {
+      try {
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+        var utmSource = new URLSearchParams(window.location.search).get("utm_source");
+        window.va("event", { name: "proposal_unlocked", data: utmSource ? { source: utmSource } : undefined });
+      } catch (err) { /* analytics unavailable */ }
+    }
 
-          <!-- Hardware Telemetry & Self-Cleaning -->
-          <div class="telemetry-section" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
-            <div class="db-card-header" style="padding: 0 0 1rem 0;">
-              <div>
-                <span class="db-card-title">특허 자율 오토 클리닝 통제 장치</span>
-                <span class="db-card-subtitle">침상 방전 전극 자율 와이핑 및 유지관리 리소스</span>
-              </div>
-            </div>
-            
-            <div class="sys-metrics" style="margin-bottom: 1.25rem;">
-              <div class="sys-metric-item">
-                <div class="sys-label-group">
-                  <span>방전 전극 오염 상태 (미세먼지 흡착)</span>
-                  <span id="db-clog-percent">4%</span>
-                </div>
-                <div class="sys-bar-bg">
-                  <div class="sys-bar-fill green" id="db-clog-fill" style="width: 4%;"></div>
-                </div>
-              </div>
-              
-              <div class="sys-metric-item">
-                <div class="sys-label-group">
-                  <span>이온 방전 살균 효율</span>
-                  <span id="db-efficiency-percent">99.5%</span>
-                </div>
-                <div class="sys-bar-bg">
-                  <div class="sys-bar-fill cyan" id="db-efficiency-fill" style="width: 99.5%;"></div>
-                </div>
-              </div>
-            </div>
+    if (sessionStorage.getItem(SESSION_KEY) === "true") {
+      unlock();
+    } else {
+      document.body.style.overflow = "hidden";
+      if (input) {
+        setTimeout(function () { input.focus(); }, 100);
+        input.addEventListener("input", function () {
+          if (input.value.length === 4) verify(input.value);
+        });
+        input.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") verify(input.value);
+        });
+      }
+    }
 
-            <!-- Interactive cleaning component visualizer -->
-            <div class="cleaning-visualizer">
-              <div class="clean-track">
-                <!-- Silicon Brush Representation -->
-                <div class="clean-brush" id="motor-brush"></div>
-                <!-- Needle electrodes representation -->
-                <div class="electrodes-container">
-                  <div class="needle"></div>
-                  <div class="needle"></div>
-                  <div class="needle"></div>
-                  <div class="needle"></div>
-                  <div class="needle"></div>
-                  <div class="needle"></div>
-                  <div class="needle"></div>
-                  <div class="needle"></div>
-                </div>
-              </div>
-              <div class="clean-visual-meta">
-                <span>클리닝 액추에이터 모터 상태: <strong id="brush-motor-state" style="color:var(--neon-green)">대기 (IDLE)</strong></span>
-              </div>
-            </div>
-            
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-              <button class="btn-primary" id="btn-trigger-clean-db" style="width: 100%; justify-content: center; padding: 0.8rem; border-radius: 8px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                자율 전극 세정 루틴 강제 구동
-              </button>
-            </div>
-          </div>
+    function verify(val) {
+      if (val === PASSWORD) {
+        sessionStorage.setItem(SESSION_KEY, "true");
+        errorEl.textContent = "";
+        trackUnlockEvent();
+        unlock();
+      } else {
+        errorEl.textContent = "비밀번호가 올바르지 않습니다. 다시 입력해 주세요.";
+        gate.classList.add("shake");
+        input.value = "";
+        input.focus();
+        setTimeout(function () { gate.classList.remove("shake"); }, 450);
+      }
+    }
 
-        </div>
-      </div>
+    function initWidgets() {
+      // ===== Mobile nav =====
+      var toggle = document.getElementById("navToggle");
+      var mobileNav = document.getElementById("mobileNav");
+      if (toggle && mobileNav) {
+        toggle.addEventListener("click", function () {
+          var open = mobileNav.classList.toggle("open");
+          toggle.setAttribute("aria-expanded", String(open));
+          toggle.setAttribute("aria-label", open ? "메뉴 닫기" : "메뉴 열기");
+        });
+        mobileNav.querySelectorAll("a").forEach(function (a) {
+          a.addEventListener("click", function () {
+            mobileNav.classList.remove("open");
+            toggle.setAttribute("aria-expanded", "false");
+          });
+        });
+      }
 
-      <!-- Historical charts section (Bottom Panel) -->
-      <div class="db-grid-row" style="margin-top: 1.5rem;">
-        <div class="col-12 db-card">
-          <div class="db-card-header" style="flex-direction: row; justify-content: space-between; align-items: center;">
-            <div>
-              <span class="db-card-title">지점 내 최근 24시간 실내 복합 공기질 트렌드</span>
-              <span class="db-card-subtitle">실시간 로컬 누적 로그 데이터의 동적 차팅(Chart.js)</span>
-            </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <div class="chart-toggles">
-                <button class="chart-toggle-btn active" data-chart-type="co2">이산화탄소</button>
-                <button class="chart-toggle-btn" data-chart-type="pm">미세먼지</button>
-                <button class="chart-toggle-btn" data-chart-type="voc">악취가스 (TVOC)</button>
-              </div>
-              <button class="btn-secondary" id="btn-export-csv" style="padding: 0.5rem 1.2rem; font-size: 0.85rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                테스트 데이터 내보내기 (CSV)
-              </button>
-            </div>
-          </div>
-          
-          <div class="chart-wrapper">
-            <canvas id="historical-trends-chart"></canvas>
-          </div>
-        </div>
-      </div>
+      // ===== Footer year =====
+      var yearEl = document.getElementById("year");
+      if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-    </div>
-  </main>
+      // ===== Enclosed-room CO2 time simulator =====
+      var slider = document.getElementById("co2-slider");
+      if (slider) {
+        var timeEl = document.getElementById("sim-time");
+        var co2El = document.getElementById("sim-co2");
+        var odorEl = document.getElementById("sim-odor");
+        var satEl = document.getElementById("sim-sat");
 
-  <script src="app.js"></script>
+        function renderSim() {
+          var minutes = parseInt(slider.value, 10);
+          var co2 = 450 + minutes * 42;
+
+          if (minutes === 0) {
+            timeEl.textContent = "시작 직후 (여유)";
+          } else {
+            timeEl.textContent = minutes + "분 경과" + (minutes >= 15 ? " (매우 혼잡)" : "");
+          }
+
+          co2El.textContent = co2 + " ppm";
+
+          var grade, odor, sat;
+          if (co2 < 700) { grade = "good"; odor = "쾌적 (좋음)"; sat = "매우 높음"; }
+          else if (co2 < 1200) { grade = "mid"; odor = "보통 (환기 권장)"; sat = "보통"; }
+          else { grade = "bad"; odor = "나쁨 (악취 정체)"; sat = "하락 위험"; }
+
+          co2El.className = "sim-cell__val " + grade;
+          odorEl.className = "sim-cell__val " + grade;
+          satEl.className = "sim-cell__val " + grade;
+          odorEl.textContent = odor;
+          satEl.textContent = sat;
+        }
+
+        slider.addEventListener("input", renderSim);
+        renderSim();
+      }
+
+      // ===== Reveal on scroll =====
+      if ("IntersectionObserver" in window && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("in");
+              io.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.08 });
+        document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("in"); });
+      }
+    }
+  })();
+  </script>
   <!-- Vercel Web Analytics -->
   <script defer src="/_vercel/insights/script.js"></script>
 </body>

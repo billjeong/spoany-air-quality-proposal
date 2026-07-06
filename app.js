@@ -112,25 +112,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const slideNavControls = document.getElementById('slide-nav-controls');
 
   function updateSlide(index) {
+    // Guard: 슬라이드 요소가 없는 페이지(dashboard.html)에서는 동작하지 않음
+    if (!slides.length) return;
     if (index < 1 || index > totalSlides) return;
-    
+
+    const targetSlide = document.getElementById(`slide-${index}`);
+    if (!targetSlide) return;
+
     // Update active slide class
     slides.forEach(slide => slide.classList.remove('active'));
-    document.getElementById(`slide-${index}`).classList.add('active');
-    
+    targetSlide.classList.add('active');
+
     currentSlide = index;
-    
+
     // Update indicator
-    slideIndicator.textContent = `${currentSlide} / ${totalSlides}`;
-    
+    if (slideIndicator) slideIndicator.textContent = `${currentSlide} / ${totalSlides}`;
+
     // Update buttons disabled state
-    btnPrev.disabled = (currentSlide === 1);
-    btnNext.disabled = (currentSlide === totalSlides);
+    if (btnPrev) btnPrev.disabled = (currentSlide === 1);
+    if (btnNext) btnNext.disabled = (currentSlide === totalSlides);
   }
 
   // Slide controls event listeners
-  btnPrev.addEventListener('click', () => updateSlide(currentSlide - 1));
-  btnNext.addEventListener('click', () => updateSlide(currentSlide + 1));
+  if (btnPrev) btnPrev.addEventListener('click', () => updateSlide(currentSlide - 1));
+  if (btnNext) btnNext.addEventListener('click', () => updateSlide(currentSlide + 1));
   
   if (btnStartPitch) {
     btnStartPitch.addEventListener('click', () => updateSlide(2));
@@ -139,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Keyboard navigation
   document.addEventListener('keydown', (e) => {
     // Only navigate slides if the pitch deck is visible
-    if (btnModePitch.classList.contains('active')) {
+    if (btnModePitch && btnModePitch.classList.contains('active')) {
       if (e.key === 'ArrowLeft') {
         updateSlide(currentSlide - 1);
       } else if (e.key === 'ArrowRight') {
@@ -162,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }, false);
   
   function handleSwipe() {
-    if (!btnModePitch.classList.contains('active')) return;
+    if (!btnModePitch || !btnModePitch.classList.contains('active')) return;
     
     const swipeThreshold = 50;
     const deltaX = touchEndX - touchStartX;
@@ -180,13 +185,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Mode Toggle (Pitch Presentation vs. Live Dashboard)
   // --------------------------------------------------------------------------
   function setMode(mode) {
+    // Guard: 모드 토글 요소가 없는 페이지(dashboard.html)에서는 동작하지 않음
+    if (!btnModePitch || !btnModeDashboard || !pitchContainer || !dashboardContainer) return;
+
     if (mode === 'pitch') {
       btnModePitch.classList.add('active');
       btnModeDashboard.classList.remove('active');
       pitchContainer.style.display = 'block';
       dashboardContainer.classList.remove('active');
-      slideNavControls.style.display = 'flex';
-      
+      if (slideNavControls) slideNavControls.style.display = 'flex';
+
       // Stop dashboard rendering animations if necessary, update size of slides
       updateSlide(currentSlide);
     } else {
@@ -194,8 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
       btnModeDashboard.classList.add('active');
       pitchContainer.style.display = 'none';
       dashboardContainer.classList.add('active');
-      slideNavControls.style.display = 'none';
-      
+      if (slideNavControls) slideNavControls.style.display = 'none';
+
       // Recalculate size of Chart.js since it was hidden
       if (trendsChart) {
         trendsChart.resize();
@@ -203,10 +211,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  btnModePitch.addEventListener('click', () => setMode('pitch'));
-  btnModeDashboard.addEventListener('click', () => setMode('dashboard'));
-  btnJumpDb.addEventListener('click', () => setMode('dashboard'));
-  btnMilestoneNext.addEventListener('click', () => setMode('dashboard'));
+  if (btnModePitch) btnModePitch.addEventListener('click', () => setMode('pitch'));
+  if (btnModeDashboard) btnModeDashboard.addEventListener('click', () => setMode('dashboard'));
+  if (btnJumpDb) btnJumpDb.addEventListener('click', () => setMode('dashboard'));
+  if (btnMilestoneNext) btnMilestoneNext.addEventListener('click', () => setMode('dashboard'));
 
   // --------------------------------------------------------------------------
   // 3. Slide 2: Congestion Slider Simulator
@@ -294,6 +302,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let isSlideCleaning = false;
 
   function updateSlideCloggingUI() {
+    // Guard: 슬라이드 시뮬레이터 요소가 없는 페이지(dashboard.html)에서는 동작하지 않음
+    if (!filterClogPercent || !filterClogFill || !ionEfficiencyPercent || !ionEfficiencyFill || !cleaningStatusTag) return;
     filterClogPercent.textContent = `${slideFilterClog.toFixed(0)}%`;
     filterClogFill.style.width = `${slideFilterClog}%`;
     ionEfficiencyPercent.textContent = `${slideIonEfficiency.toFixed(1)}%`;
@@ -549,19 +559,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  btnModeAuto.addEventListener('click', () => {
-    systemMode = 'auto';
-    btnModeAuto.classList.add('active');
-    btnModeManual.classList.remove('active');
-    logEvent("자율 AI 공조 모드로 전환되었습니다.");
-  });
+  if (btnModeAuto && btnModeManual) {
+    btnModeAuto.addEventListener('click', () => {
+      systemMode = 'auto';
+      btnModeAuto.classList.add('active');
+      btnModeManual.classList.remove('active');
+      logEvent("자율 AI 공조 모드로 전환되었습니다.");
+    });
 
-  btnModeManual.addEventListener('click', () => {
-    systemMode = 'manual';
-    btnModeAuto.classList.remove('active');
-    btnModeManual.classList.add('active');
-    logEvent("사용자 수동 통제 모드로 전환되었습니다.");
-  });
+    btnModeManual.addEventListener('click', () => {
+      systemMode = 'manual';
+      btnModeAuto.classList.remove('active');
+      btnModeManual.classList.add('active');
+      logEvent("사용자 수동 통제 모드로 전환되었습니다.");
+    });
+  }
 
   // Event logging helper
   const eventLogBox = document.getElementById('event-log-box');
@@ -586,11 +598,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Trigger Autoclean Routine
   function triggerAutoCleanRoutine(callback) {
     isDbCleaning = true;
-    
-    // UI Update
-    brushMotorState.textContent = "세정 구동 중 (CLEANING...)";
-    brushMotorState.style.color = "var(--spoany-orange)";
-    
+
+    // UI Update (요소가 없는 페이지에서도 에러 없이 동작)
+    if (brushMotorState) {
+      brushMotorState.textContent = "세정 구동 중 (CLEANING...)";
+      brushMotorState.style.color = "var(--spoany-orange)";
+    }
+
     if (motorBrush) {
       motorBrush.classList.add('cleaning-active');
     }
@@ -602,9 +616,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (motorBrush) {
         motorBrush.classList.remove('cleaning-active');
       }
-      
-      brushMotorState.textContent = "대기 (IDLE)";
-      brushMotorState.style.color = "var(--neon-green)";
+
+      if (brushMotorState) {
+        brushMotorState.textContent = "대기 (IDLE)";
+        brushMotorState.style.color = "var(--neon-green)";
+      }
       
       dbFilterClog = 1;
       dbEfficiency = 99.8;
@@ -618,6 +634,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateDbCloggingUI() {
+    // Guard: 대시보드 요소가 없는 페이지에서는 동작하지 않음
+    if (!dbClogPercent || !dbClogFill || !dbEfficiencyPercent || !dbEfficiencyFill) return;
     dbClogPercent.textContent = `${dbFilterClog.toFixed(0)}%`;
     dbClogFill.style.width = `${dbFilterClog}%`;
     dbEfficiencyPercent.textContent = `${dbEfficiency.toFixed(1)}%`;
@@ -652,6 +670,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastAutoSpeed = 1;
   
   setInterval(() => {
+    // Guard: 대시보드 요소가 없는 페이지에서는 시뮬레이션 루프를 건너뜀
+    if (!dbCo2Val || !dbPmVal || !dbDeodorRatio || !dbOverallStatus) return;
+
     // 1. In Auto Mode, AI controls fan speed based on pollution levels
     if (systemMode === 'auto') {
       if (co2Val > 1100 || pmVal > 75) {

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스포애니 공기질 실시간 대시보드 데모</title>
+  <meta name="description" content="스포애니 밀폐 룸 공기질을 센서 기반으로 자율 관리하는 시스템의 실시간 대시보드 데모.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:title" content="스포애니 공기질 실시간 대시보드 데모">
+  <meta property="og:description" content="스포애니 밀폐 룸 공기질을 센서 기반으로 자율 관리하는 시스템의 실시간 대시보드 데모.">
+  <meta property="og:site_name" content="스포애니 공기질 관리 제안">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="index.css">
+  <style>
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .db-page-title { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; color: #E2E8F0; letter-spacing: -0.3px; }
+  </style>
+  <!-- Chart.js CDN for interactive charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Password Gate Screen (Basic Client-Side protection for external blocking) -->
+  <div id="password-gate" role="dialog" aria-modal="true" aria-labelledby="gate-title-text">
+    <div class="gate-container">
+      <div class="gate-logo">
+        <span>SPOANY</span> <span>AIR</span>
+      </div>
+      <div class="gate-badge">AIR CARE HUB</div>
+      <p class="gate-title" id="gate-title-text">제안서 보안 인증</p>
+      <p class="gate-description">본 데모는 열람 권한이 부여된 담당자에게만 공개됩니다.<br>전송받은 4자리 PIN 번호를 입력하십시오.</p>
+
+      <div class="gate-input-wrapper">
+        <label for="gate-password-input" class="sr-only">4자리 PIN 번호</label>
+        <input type="password" id="gate-password-input" inputmode="numeric" pattern="[0-9]*" placeholder="••••" maxlength="4" autocomplete="off" aria-describedby="gate-error-msg" autofocus>
+      </div>
+
+      <p id="gate-error-msg" class="gate-error-msg" role="alert" aria-live="polite"></p>
+    </div>
+  </div>
+
+
+  <!-- Header -->
+  <header>
+    <div class="logo-container">
+      <div class="logo-text"><span>SPOANY</span> <span>AIR</span></div>
+      <div class="logo-badge">AIR CARE HUB</div>
+      <span style="font-size: 1.6rem; color: #64748B; font-family: var(--font-display); margin-left: 0.5rem; border-left: 1px solid var(--border-color); padding-left: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: -1px;">by AICube</span>
+      <a class="master-link" href="https://0spoanymaster.vercel.app/" title="스포애니 통합 제안 허브로 이동">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        통합 허브
+      </a>
+    </div>
+
+    <span class="db-page-title">실시간 스마트 공기질 대시보드 데모</span>
+
+    <a class="master-link" href="index.html" title="문서형 제안서로 이동">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      제안서 보기
+    </a>
+  </header>
+
+  <!-- Main Body -->
+  <main>
+
+    <!-- Live AI Dashboard Section -->
+    <div class="dashboard-container active" id="dashboard-container">
+
+      <!-- Top Summary Metrics Bar -->
+      <div class="summary-bar">
+        <div class="sum-card" id="sum-card-status">
+          <div class="sum-icon green">🍃</div>
+          <div class="sum-details">
+            <span class="sum-label">지점 실내 공기 상태</span>
+            <span class="sum-value" id="db-overall-status">매우 좋음</span>
+          </div>
+        </div>
+
+        <div class="sum-card">
+          <div class="sum-icon cyan">📊</div>
+          <div class="sum-details">
+            <span class="sum-label">평균 이산화탄소 (CO₂)</span>
+            <span class="sum-value" id="db-co2-val">480 ppm</span>
+          </div>
+        </div>
+
+        <div class="sum-card">
+          <div class="sum-icon yellow">💨</div>
+          <div class="sum-details">
+            <span class="sum-label">미세먼지 (PM2.5)</span>
+            <span class="sum-value" id="db-pm-val">6 ㎍/㎥</span>
+          </div>
+        </div>
+
+        <div class="sum-card">
+          <div class="sum-icon orange">✨</div>
+          <div class="sum-details">
+            <span class="sum-label">공인 악취 탈취율</span>
+            <span class="sum-value" id="db-deodor-ratio">94.8%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time Simulation & layout mapping (Left Side) -->
+      <div class="db-grid-row">
+        <div class="col-8 db-card">
+          <div class="db-card-header">
+            <div>
+              <span class="db-card-title">
+                <span class="cctv-rec-dot" style="display:inline-block; margin-right: 4px;"></span>
+                실시간 자율 공조 및 실내 공기 기류 시뮬레이터
+              </span>
+              <span class="db-card-subtitle">지점 도면 내부 공조기 급기 및 플라즈마 이온 기류 순환(파티클 흐름) 시각화</span>
+            </div>
+          </div>
+
+          <!-- Gymnasium layout map with air particle flow -->
+          <div class="map-wrapper">
+            <div class="map-layout">
+              <!-- Zone 1: G.X Room -->
+              <div class="map-zone" id="zone-gx" data-zonename="G.X 룸">
+                <span class="zone-label">G.X 룸</span>
+                <span class="zone-temp">CO₂: <strong id="zone-co2-gx">450</strong> ppm</span>
+                <div class="zone-status-badge">자율 정화 중</div>
+              </div>
+
+              <!-- Zone 2: Spinning Room -->
+              <div class="map-zone" id="zone-spinning" data-zonename="스피닝룸">
+                <span class="zone-label">스피닝룸</span>
+                <span class="zone-temp">CO₂: <strong id="zone-co2-spinning">480</strong> ppm</span>
+                <div class="zone-status-badge">자율 정화 중</div>
+              </div>
+
+              <!-- Zone 3: Cardio Area -->
+              <div class="map-zone" id="zone-cardio" data-zonename="유산소 존">
+                <span class="zone-label">유산소 존 (러닝머신)</span>
+                <span class="zone-temp">CO₂: <strong id="zone-co2-cardio">500</strong> ppm</span>
+                <div class="zone-status-badge">자율 정화 중</div>
+              </div>
+
+              <!-- Zone 4: Free Weight Area -->
+              <div class="map-zone" id="zone-free" data-zonename="프리웨이트 존">
+                <span class="zone-label">프리웨이트 존</span>
+                <span class="zone-temp">CO₂: <strong id="zone-co2-free">510</strong> ppm</span>
+                <div class="zone-status-badge">자율 정화 중</div>
+              </div>
+
+              <!-- Vent and duct nodes overlay -->
+              <div class="duct-node vent-1" data-desc="천장 매립 공조 배출구 1"></div>
+              <div class="duct-node vent-2" data-desc="천장 매립 공조 배출구 2"></div>
+              <div class="duct-node vent-3" data-desc="천장 매립 공조 배출구 3"></div>
+              <div class="duct-node vent-4" data-desc="천장 매립 공조 배출구 4"></div>
+
+              <!-- Air particles canvas -->
+              <canvas id="air-particles-canvas"></canvas>
+            </div>
+
+            <div class="map-legend">
+              <div class="legend-item"><span class="badge-dot" style="background:#00e676;"></span><span>정상 (좋음)</span></div>
+              <div class="legend-item"><span class="badge-dot" style="background:#FFE600;"></span><span>보통 (관심)</span></div>
+              <div class="legend-item"><span class="badge-dot" style="background:#FF2A6D;"></span><span>오염 (경고)</span></div>
+              <div class="legend-item"><span class="badge-dot" style="background:#00e5ff; box-shadow: 0 0 8px #00e5ff;"></span><span>플라즈마 정화 기류</span></div>
+            </div>
+          </div>
+
+          <!-- Event logs -->
+          <div class="event-log-container" id="event-log-box">
+            <div class="log-entry"><span class="log-time">[12:00:01]</span> <span class="log-msg">Spoany Air Care Hub IoT 데몬 연결 성공... 로컬 게이트웨이 활성화.</span></div>
+            <div class="log-entry"><span class="log-time">[12:00:03]</span> <span class="log-msg">공조 덕트 연동 천장 고출력 플라즈마 이오나이저 로드 상태: 정상.</span></div>
+            <div class="log-entry"><span class="log-time">[12:00:06]</span> <span class="log-msg">G.X 룸 내장형 32인치 디스플레이 연동 이온 풍량 제어 CONT_1 핀 대기 중.</span></div>
+          </div>
+        </div>
+
+        <!-- Controls & Resources (Right Side) -->
+        <div class="col-4 db-card flex-col">
+
+          <!-- Controls Panel -->
+          <div class="control-section">
+            <div class="db-card-header" style="padding: 0 0 1rem 0;">
+              <div>
+                <span class="db-card-title">실시간 환경 가상 통제 패널</span>
+                <span class="db-card-subtitle">지점 가용 인원수 및 외부 유입 오염도 인위 조절 테스트</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <div class="control-label-row">
+                <span>지점 내 운동 회원수 (혼잡 발생)</span>
+                <span id="val-occupant-count" class="val-highlight">20 명</span>
+              </div>
+              <input type="range" min="0" max="150" value="20" class="custom-range" id="sim-occupants">
+            </div>
+
+            <div class="control-group">
+              <div class="control-label-row">
+                <span>외부 미세먼지 오염도 유입</span>
+                <span id="val-pollution-dust" class="val-highlight">보통 (35 ㎍/㎥)</span>
+              </div>
+              <input type="range" min="10" max="180" value="35" class="custom-range" id="sim-pollution">
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">
+              <span>자율 공조 시스템 모드</span>
+              <div style="display: flex; gap: 0.25rem;">
+                <button class="toggle-btn active" id="btn-mode-auto" style="padding: 0.4rem 1rem; font-size: 0.8rem;">자율 AI 모드</button>
+                <button class="toggle-btn" id="btn-mode-manual" style="padding: 0.4rem 1rem; font-size: 0.8rem;">수동 통제</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hardware Telemetry & Self-Cleaning -->
+          <div class="telemetry-section" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+            <div class="db-card-header" style="padding: 0 0 1rem 0;">
+              <div>
+                <span class="db-card-title">특허 자율 오토 클리닝 통제 장치</span>
+                <span class="db-card-subtitle">침상 방전 전극 자율 와이핑 및 유지관리 리소스</span>
+              </div>
+            </div>
+
+            <div class="sys-metrics" style="margin-bottom: 1.25rem;">
+              <div class="sys-metric-item">
+                <div class="sys-label-group">
+                  <span>방전 전극 오염 상태 (미세먼지 흡착)</span>
+                  <span id="db-clog-percent">4%</span>
+                </div>
+                <div class="sys-bar-bg">
+                  <div class="sys-bar-fill green" id="db-clog-fill" style="width: 4%;"></div>
+                </div>
+              </div>
+
+              <div class="sys-metric-item">
+                <div class="sys-label-group">
+                  <span>이온 방전 살균 효율</span>
+                  <span id="db-efficiency-percent">99.5%</span>
+                </div>
+                <div class="sys-bar-bg">
+                  <div class="sys-bar-fill cyan" id="db-efficiency-fill" style="width: 99.5%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Interactive cleaning component visualizer -->
+            <div class="cleaning-visualizer">
+              <div class="clean-track">
+                <!-- Silicon Brush Representation -->
+                <div class="clean-brush" id="motor-brush"></div>
+                <!-- Needle electrodes representation -->
+                <div class="electrodes-container">
+                  <div class="needle"></div>
+                  <div class="needle"></div>
+                  <div class="needle"></div>
+                  <div class="needle"></div>
+                  <div class="needle"></div>
+                  <div class="needle"></div>
+                  <div class="needle"></div>
+                  <div class="needle"></div>
+                </div>
+              </div>
+              <div class="clean-visual-meta">
+                <span>클리닝 액추에이터 모터 상태: <strong id="brush-motor-state" style="color:var(--neon-green)">대기 (IDLE)</strong></span>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+              <button class="btn-primary" id="btn-trigger-clean-db" style="width: 100%; justify-content: center; padding: 0.8rem; border-radius: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                자율 전극 세정 루틴 강제 구동
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Historical charts section (Bottom Panel) -->
+      <div class="db-grid-row" style="margin-top: 1.5rem;">
+        <div class="col-12 db-card">
+          <div class="db-card-header" style="flex-direction: row; justify-content: space-between; align-items: center;">
+            <div>
+              <span class="db-card-title">지점 내 최근 24시간 실내 복합 공기질 트렌드</span>
+              <span class="db-card-subtitle">실시간 로컬 누적 로그 데이터의 동적 차팅(Chart.js)</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <div class="chart-toggles">
+                <button class="chart-toggle-btn active" data-chart-type="co2">이산화탄소</button>
+                <button class="chart-toggle-btn" data-chart-type="pm">미세먼지</button>
+                <button class="chart-toggle-btn" data-chart-type="voc">악취가스 (TVOC)</button>
+              </div>
+              <button class="btn-secondary" id="btn-export-csv" style="padding: 0.5rem 1.2rem; font-size: 0.85rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                테스트 데이터 내보내기 (CSV)
+              </button>
+            </div>
+          </div>
+
+          <div class="chart-wrapper">
+            <canvas id="historical-trends-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <!-- Vercel Web Analytics -->
+  <script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
